@@ -336,7 +336,7 @@ namespace SE.Particles
 
             bool shouldMultiThread = amount >= 2048 / Environment.ProcessorCount;
             if (shouldMultiThread && ParallelEmission) {
-                Parallel.For(0, amount, i => {
+                QuickParallel.For(0, amount, i => {
                     EmitParticle(i, amount);
                 });
             } else {
