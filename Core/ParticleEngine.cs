@@ -189,8 +189,10 @@ namespace SE.Core
                 });
             }).ContinueWith(t1 => {
                 // Update emitters.
-                QuickParallel.ForEach(VisibleEmitters, emitter => {
-                    emitter.Update(deltaTime);
+                QuickParallel.ForEach(VisibleEmitters, (emitters, count) => {
+                    for (int i = 0; i < count; i++) {
+                        emitters[i].Update(deltaTime);
+                    }
                 });
             });
         }
