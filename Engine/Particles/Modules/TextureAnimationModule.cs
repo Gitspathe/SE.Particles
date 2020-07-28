@@ -34,7 +34,7 @@ namespace SE.Particles.Modules
                         int frameX = (int) Math.Floor((double) frame % SheetRows);
                         int frameY = (int) Math.Floor((double) frame / SheetRows);
 #endif
-                        particle->SourceRectangle = new Vector4(
+                        particle->SourceRectangle = new Int4(
                             frameX * frameSize, 
                             frameY * frameSize, 
                             frameSize, 

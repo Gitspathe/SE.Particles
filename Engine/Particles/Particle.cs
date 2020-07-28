@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
 
@@ -11,15 +9,15 @@ namespace SE.Particles
     {
         public Vector2 Position;
         public Vector2 Scale;
-        public Vector2 Direction;         // Direction the particle travels in.
-        public Vector4 Color;             // H, S, L, A.
-        public float Mass;                // Used for repel and attract type functionality.
+        public Vector2 Direction;    // Direction the particle travels in.
+        public Vector4 Color;        // H, S, L, A.
+        public float Mass;           // Used for repel and attract type functionality.
         public float Speed;
-        public float SpriteRotation;      // Sprite rotation.
+        public float SpriteRotation; // Sprite rotation.
         public float InitialLife;
         public float TimeAlive;
-        public float layerDepth;          // Draw order.
-        public Vector4 SourceRectangle;   // Texture source rectangle. X, Y, Width, Height.
+        public float layerDepth;     // Draw order.
+        public Int4 SourceRectangle; // Texture source rectangle. X, Y, Width, Height.
 
         public static readonly int SizeInBytes = Marshal.SizeOf(typeof(Particle));
 
@@ -38,7 +36,24 @@ namespace SE.Particles
             TimeAlive = timeAlive;
             InitialLife = timeAlive;
             layerDepth = 0.0f;
-            SourceRectangle = Vector4.Zero;
+            SourceRectangle = new Int4(0, 0, 1, 1);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Int4
+    {
+        public int X;
+        public int Y;
+        public int Width;
+        public int Height;
+
+        public Int4(int x, int y, int width, int height)
+        {
+            X = x;
+            Y = y;
+            Width = width;
+            Height = height;
         }
     }
 }

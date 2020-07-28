@@ -106,11 +106,11 @@ namespace SE.Particles
         }
         private Vector2 textureSize;
 
-        public Vector4 StartRect {
+        public Int4 StartRect {
             get => startRect;
             set {
                 try {
-                    if (value.Z <= 0 || value.W <= 0 || value.X > value.Z || value.Y > value.W)
+                    if (value.Width <= 0 || value.Height <= 0 || value.X > value.Width || value.Y > value.Height)
                         throw new InvalidEmitterValueException($"{nameof(StartRect)} is not a valid source rectangle.");
 
                     startRect = value;
@@ -118,17 +118,17 @@ namespace SE.Particles
                     if (ParticleEngine.ErrorHandling == ErrorHandling.Throw) 
                         throw;
 
-                    if (value.Z < 1.0f)         value.Z = 1.0f;
-                    if (value.W < 1.0f)         value.W = 1.0f;
-                    if (value.X < 1.0f)         value.X = 1.0f;
-                    else if (value.X > value.Z) value.X = value.Z;
-                    if (value.Y < 1.0f)         value.Y = 1.0f;
-                    else if (value.Y > value.W) value.Y = value.W;
+                    if (value.Width < 1.0f)          value.Width = 1;
+                    if (value.Height < 1.0f)         value.Height = 1;
+                    if (value.X < 1.0f)              value.X = 1;
+                    else if (value.X > value.Width)  value.X = value.Width;
+                    if (value.Y < 1.0f)              value.Y = 1;
+                    else if (value.Y > value.Height) value.Y = value.Height;
                     startRect = value;
                 }
             }
         }
-        private Vector4 startRect;
+        private Int4 startRect;
 
 #if MONOGAME
         public Texture2D Texture {
@@ -193,8 +193,8 @@ namespace SE.Particles
             Shape = shape ?? new PointEmitterShape();
             Size = size;
             Position = Vector2.Zero;
-            TextureSize = new Vector2(128, 128);         // Dummy value.
-            StartRect = new Vector4(0, 0, 128, 128); // Dummy value.
+            TextureSize = new Vector2(128, 128);             // Dummy value.
+            StartRect = new Int4(0, 0, 128, 128); // Dummy value.
             switch (ParticleEngine.AllocationMode) {
                 case ParticleAllocationMode.ArrayPool:
                     Particles = ArrayPool<Particle>.Shared.Rent(capacity);
