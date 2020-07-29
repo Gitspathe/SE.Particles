@@ -35,10 +35,10 @@ namespace SE.Particles.Modules
                         int frameY = (int) Math.Floor((double) frame / SheetRows);
 #endif
                         particle->SourceRectangle = new Int4(
-                            frameX * frameSize, 
-                            frameY * frameSize, 
-                            frameSize, 
-                            frameSize);
+                             frameX * frameSize, 
+                             frameY * frameSize, 
+                             frameSize, 
+                             frameSize);
                     }
                 } break;
                 case Mode.Loop: {

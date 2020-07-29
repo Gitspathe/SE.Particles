@@ -655,6 +655,37 @@ namespace SE.Particles
         }
     }
 
+    // TODO: Structure of Arrays.
+    public struct Particles
+    {
+        public Vector2[] Position;
+        public Vector2[] Scale;
+        public Vector2[] Direction;    // Direction the particle travels in.
+        public Vector4[] Color;        // H, S, L, A.
+        public float[] Mass;           // Used for repel and attract type functionality.
+        public float[] Speed;
+        public float[] SpriteRotation; // Sprite rotation.
+        public float[] InitialLife;
+        public float[] TimeAlive;
+        public float[] LayerDepth;     // Draw order.
+        public Int4[] SourceRectangle; // Texture source rectangle. X, Y, Width, Height.
+
+        public Particles(int capacity)
+        {
+            Position = new Vector2[capacity];
+            Scale = new Vector2[capacity];
+            Direction = new Vector2[capacity];
+            Color = new Vector4[capacity];
+            Mass = new float[capacity];
+            Speed = new float[capacity];
+            SpriteRotation = new float[capacity];
+            InitialLife = new float[capacity];
+            TimeAlive = new float[capacity];
+            LayerDepth = new float[capacity];
+            SourceRectangle = new Int4[capacity];
+        }
+    }
+
     public enum Space
     {
         World,
