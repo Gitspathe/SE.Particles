@@ -4,7 +4,6 @@ using Vector4 = System.Numerics.Vector4;
 
 namespace SE.Particles
 {
-    // TODO: Turn into Struct of Arrays (SOA)??
     [StructLayout(LayoutKind.Sequential)]
     public struct Particle
     {

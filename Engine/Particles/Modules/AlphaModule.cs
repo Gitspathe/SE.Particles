@@ -10,8 +10,8 @@ namespace SE.Particles.Modules
     public unsafe class AlphaModule : ParticleModule
     {
         private float[] rand;
-        private float[] startLits;
-        private float[] randEndLits;
+        private float[] startAlphas;
+        private float[] randEndAlphas;
 
         private Transition transitionType;
         private float end1;
@@ -52,7 +52,7 @@ namespace SE.Particles.Modules
 
         public override void OnInitialize()
         {
-            startLits = new float[Emitter.ParticlesLength];
+            startAlphas = new float[Emitter.ParticlesLength];
             RegenerateRandom();
         }
 
@@ -62,19 +62,19 @@ namespace SE.Particles.Modules
                 return;
 
             rand = new float[Emitter.ParticlesLength];
-            randEndLits = new float[Emitter.ParticlesLength];
+            randEndAlphas = new float[Emitter.ParticlesLength];
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
             for (int i = 0; i < particlesIndex.Length; i++) {
                 int index = particlesIndex[i];
-                startLits[index] = Emitter.Particles[index].Color.W;
+                startAlphas[index] = Emitter.Particles[index].Color.W;
                 if (!IsRandom) 
                     continue;
 
                 rand[particlesIndex[i]] = Random.Next(0.0f, 1.0f);
-                randEndLits[i] = Between(end1, end2, rand[i]);
+                randEndAlphas[i] = Between(end1, end2, rand[i]);
             }
         }
 
@@ -90,7 +90,7 @@ namespace SE.Particles.Modules
                             particle->Color.X, 
                             particle->Color.Y, 
                             particle->Color.Z, 
-                            ParticleMath.Lerp(startLits[i], end1, particle->TimeAlive / particle->InitialLife));
+                            ParticleMath.Lerp(startAlphas[i], end1, particle->TimeAlive / particle->InitialLife));
                     }
                 } break;
                 case Transition.Curve: {
@@ -109,7 +109,7 @@ namespace SE.Particles.Modules
                             particle->Color.X,
                             particle->Color.Y,
                             particle->Color.Z,
-                            ParticleMath.Lerp(startLits[i], randEndLits[i], particle->TimeAlive / particle->InitialLife));
+                            ParticleMath.Lerp(startAlphas[i], randEndAlphas[i], particle->TimeAlive / particle->InitialLife));
                     }
                 } break;
                 default:
