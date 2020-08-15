@@ -4,6 +4,10 @@ using Vector4 = System.Numerics.Vector4;
 
 namespace SE.Particles
 {
+
+    // TODO: Support partial GPU instancing - https://community.monogame.net/t/how-to-particle-system-a-link-to-mrgraks-small-github-cpu-particle-example/12992/8
+    // TODO: Modules should still probably work on the CPU, maybe.
+
     [StructLayout(LayoutKind.Sequential)]
     public struct Particle
     {
