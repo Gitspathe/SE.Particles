@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SE.Particles.MonoGame": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
