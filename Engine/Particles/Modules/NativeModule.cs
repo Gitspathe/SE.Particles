@@ -7,7 +7,7 @@ namespace SE.Particles.Modules
     // TODO: Native module builder.
     public unsafe class NativeModule : ParticleModule, IDisposable
     {
-        public NativeAlphaModuleWrapper AlphaModule = new NativeAlphaModuleWrapper();
+        public NativeAlphaModuleWrapper AlphaModule;
 
         private void* nativeModulePtr;
 
@@ -16,6 +16,16 @@ namespace SE.Particles.Modules
         public NativeModule()
         {
             nativeModulePtr = nativeModule_Create();
+            AlphaModule = new NativeAlphaModuleWrapper(nativeModulePtr);
+        }
+
+        public override void OnParticlesActivated(Span<int> particlesIndex)
+        {
+            fixed (int* indexPtr = particlesIndex) {
+                fixed (Particle* particleArrPtr = Emitter.Particles) {
+                    nativeModule_OnParticlesActivated(nativeModulePtr, indexPtr, particleArrPtr, particlesIndex.Length);
+                }
+            }
         }
 
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
@@ -62,6 +72,8 @@ namespace SE.Particles.Modules
         private static extern void* nativeModule_Create();
         [DllImport("SE.Native")]
         private static extern void* nativeModule_Initialize(void* modulePtr, int particleArrayLength);
+        [DllImport("SE.Native")]
+        private static extern void* nativeModule_OnParticlesActivated(void* modulePtr, int* particleIndexArr, Particle* particleArrPtr, int length);
         [DllImport("SE.Native")]
         private static extern void* nativeModule_Update(void* modulePtr, float deltaTime, Particle* particleArrPtr, int length);
         [DllImport("SE.Native")]
