@@ -110,7 +110,7 @@ namespace SE.Particles
             get => startRect;
             set {
                 try {
-                    if (value.Width <= 0 || value.Height <= 0 || value.X > value.Width || value.Y > value.Height)
+                    if (value.Width <= 0.0f || value.Height <= 0.0f)
                         throw new InvalidEmitterValueException($"{nameof(StartRect)} is not a valid source rectangle.");
 
                     startRect = value;
@@ -121,9 +121,7 @@ namespace SE.Particles
                     if (value.Width < 1.0f)          value.Width = 1;
                     if (value.Height < 1.0f)         value.Height = 1;
                     if (value.X < 1.0f)              value.X = 1;
-                    else if (value.X > value.Width)  value.X = value.Width;
                     if (value.Y < 1.0f)              value.Y = 1;
-                    else if (value.Y > value.Height) value.Y = value.Height;
                     startRect = value;
                 }
             }
