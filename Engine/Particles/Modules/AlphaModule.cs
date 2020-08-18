@@ -40,6 +40,7 @@ namespace SE.Particles.Modules
             end1 = min;
             end2 = max;
             transitionType = Transition.RandomLerp;
+            RegenerateRandom();
         }
 
         public override ParticleModule DeepCopy() 

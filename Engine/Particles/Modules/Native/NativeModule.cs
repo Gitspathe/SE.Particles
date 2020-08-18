@@ -15,12 +15,7 @@ namespace SE.Particles.Modules.Native
         {
             NativeModulePtr = (Module*)nativeModule_Create();
             NativeAlphaModule alpha = new NativeAlphaModule(this);
-            alpha.SetLerp(0.0f);
-        }
-
-        public void RemoveSubmodule(NativeSubmodule submodule)
-        {
-            nativeModule_AddSubmodule(NativeModulePtr, submodule.SubmodulePtr);
+            alpha.SetRandomLerp(0.0f, 1.0f);
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
