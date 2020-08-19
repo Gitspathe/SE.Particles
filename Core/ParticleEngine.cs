@@ -9,6 +9,14 @@ using SE.Particles.AreaModules;
 using SE.Particles.Shapes;
 using SE.Utility;
 using Vector2 = System.Numerics.Vector2;
+using Vector4 = System.Numerics.Vector4;
+using System.Runtime.CompilerServices;
+
+#if MONOGAME
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework;
+#endif
 
 namespace SE.Core
 {
@@ -17,6 +25,13 @@ namespace SE.Core
         private static readonly QuickList<Emitter> Emitters = new QuickList<Emitter>();
         private static readonly QuickList<Emitter> VisibleEmitters = new QuickList<Emitter>();
         private static readonly QuickList<AreaModule> AreaModules = new QuickList<AreaModule>();
+    
+    #if MONOGAME
+        internal static Game Game;
+        internal static GraphicsDeviceManager GraphicsDeviceManager;
+        internal static Effect particleInstanceEffect;
+        internal static Matrix WorldMatrix;
+    #endif
 
         internal static bool UseArrayPool => AllocationMode == ParticleAllocationMode.ArrayPool;
 
@@ -63,16 +78,38 @@ namespace SE.Core
         private static Task updateTask;
         private static bool temp = true;
 
+        #if MONOGAME
+        public static void Initialize(Game game, GraphicsDeviceManager gdm)
+        {
+            Initialized = true;
+            Game = game;
+            GraphicsDeviceManager = gdm;
+
+            // TODO: Load particle instancing effect. Need to improve / make flexible.
+            particleInstanceEffect = game.Content.Load<Effect>("InstancingShader");
+            particleInstanceEffect.CurrentTechnique = particleInstanceEffect.Techniques["ParticleInstancing"];
+        }
+        #else
         public static void Initialize()
         {
             Initialized = true;
         }
+        #endif
 
+        #if MONOGAME
+        public static void Update(float deltaTime, Matrix world, Vector4 viewBounds)
+        {
+            WorldMatrix = world;
+            tmpViewArr[0] = viewBounds;
+            Update(deltaTime, tmpViewArr);
+        }
+        #else
         public static void Update(float deltaTime, Vector4 viewBounds)
         {
             tmpViewArr[0] = viewBounds;
             Update(deltaTime, tmpViewArr);
         }
+        #endif
 
         public static void Update(float deltaTime, Span<Vector4> viewBounds = default)
         {
@@ -130,7 +167,7 @@ namespace SE.Core
             }
         }
 
-        private static void FindVisible(Span<Vector4> viewBounds)
+        private static void FindVisible(Span<System.Numerics.Vector4> viewBounds)
         {
             VisibleEmitters.Clear();
             if (viewBounds == default) {

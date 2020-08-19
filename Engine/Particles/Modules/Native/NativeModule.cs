@@ -14,8 +14,86 @@ namespace SE.Particles.Modules.Native
         public NativeModule()
         {
             NativeModulePtr = (Module*)nativeModule_Create();
-            NativeAlphaModule alpha = new NativeAlphaModule(this);
-            alpha.SetRandomLerp(0.0f, 1.0f);
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
+            {
+                NativeAlphaModule alpha = new NativeAlphaModule(this);
+                alpha.SetLerp(0.0f);
+            }
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)

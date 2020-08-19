@@ -137,16 +137,18 @@ namespace SE.Particles
             }
         }
         private Texture2D texture;
+
+        public ParticleRenderer Renderer;
 #endif
 
         internal int ParticleEngineIndex = -1;
         internal float TimeToLive;
         internal Particle[] Particles;
+        internal int NumActive;
         
         private HashSet<AreaModule> areaModules = new HashSet<AreaModule>();
         private PooledList<ParticleModule> modules = new PooledList<ParticleModule>(ParticleEngine.UseArrayPool);
         private int[] newParticles;
-        private int numActive;
         private int numNew;
         private int capacity;
         private Vector2 lastPosition;
@@ -172,7 +174,7 @@ namespace SE.Particles
 
         public int ParticlesLength => capacity;
         public ref Particle GetParticle(int index) => ref Particles[index];
-        public Span<Particle> ActiveParticles => new Span<Particle>(Particles, 0, numActive);
+        public Span<Particle> ActiveParticles => new Span<Particle>(Particles, 0, NumActive);
         private Span<int> NewParticleIndexes => new Span<int>(newParticles, 0, numNew);
 
         /// <summary>Controls whether or not the emitter will emit new particles.</summary>
@@ -210,6 +212,10 @@ namespace SE.Particles
             }
             Enabled = true;
             ParticleEngine.AddEmitter(this);
+
+        #if MONOGAME
+            Renderer = new ParticleRenderer(this);
+        #endif
         }
 
         public Emitter(int capacity = 2048, IEmitterShape shape = null) 
@@ -240,7 +246,7 @@ namespace SE.Particles
             numNew = 0;
 
             fixed (Particle* ptr = Particles) {
-                Particle* tail = ptr + numActive;
+                Particle* tail = ptr + NumActive;
                 int i = 0;
 
                 // Update the particles, and deactivate those whose TTL <= 0.
@@ -256,16 +262,16 @@ namespace SE.Particles
                     if (!modulesArr[i].Enabled)
                         continue;
 
-                    modulesArr[i].OnUpdate(deltaTime, ptr, numActive);
+                    modulesArr[i].OnUpdate(deltaTime, ptr, NumActive);
                 }
 
                 // Update the area modules influencing this emitter.
                 foreach (AreaModule areaModule in areaModules) {
-                    areaModule.ProcessParticles(deltaTime, ptr, numActive);
+                    areaModule.ProcessParticles(deltaTime, ptr, NumActive);
                 }
 
                 // Update particle positions.
-                tail = ptr + numActive;
+                tail = ptr + NumActive;
                 switch (Space) {
                     case Space.World: {
                         for (Particle* particle = ptr; particle < tail; particle++) {
@@ -298,7 +304,7 @@ namespace SE.Particles
 
         public void Clear()
         {
-            numActive = 0;
+            NumActive = 0;
             numNew = 0;
         }
 
@@ -308,7 +314,7 @@ namespace SE.Particles
         /// <param name="index">Index of particle to deactivate.</param>
         public void DeactivateParticle(int index)
         {
-            if (index > numActive || index < 0)
+            if (index > NumActive || index < 0)
                 throw new IndexOutOfRangeException(nameof(index));
 
             fixed (Particle* particle = &Particles[index]) {
@@ -320,16 +326,16 @@ namespace SE.Particles
         private void DeactivateParticleInternal(Particle* particle, int index)
         {
             particle->Position = new Vector2(float.MinValue, float.MinValue);
-            numActive--;
-            if (index != numActive) {
-                Particles[index] = Particles[numActive];
+            NumActive--;
+            if (index != NumActive) {
+                Particles[index] = Particles[NumActive];
             }
         }
 
         public void Emit(int amount = 1)
         {
-            amount = (int) Clamp(amount, 1.0f, capacity - numActive);
-            if (!Enabled || !EmissionEnabled || numActive + amount > capacity)
+            amount = (int) Clamp(amount, 1.0f, capacity - NumActive);
+            if (!Enabled || !EmissionEnabled || NumActive + amount > capacity)
                 return;
 
             bool shouldMultiThread = amount >= 2048 / Environment.ProcessorCount;
@@ -343,13 +349,13 @@ namespace SE.Particles
                 }
             }
 
-            numActive += amount;
+            NumActive += amount;
             numNew += amount;
         }
 
         private void EmitParticle(int i, int maxIteration)
         {
-            fixed (Particle* particle = &Particles[numActive + i]) {
+            fixed (Particle* particle = &Particles[NumActive + i]) {
                 Shape.Get((float)i / maxIteration, out particle->Position, out particle->Direction);
                 particle->Position += Position;
                 particle->TimeAlive = 0.0f;
@@ -458,7 +464,7 @@ namespace SE.Particles
                         throw new ArgumentOutOfRangeException();
                 }
             }
-            newParticles[numNew + i] = numActive + i;
+            newParticles[numNew + i] = NumActive + i;
         }
 
         public bool RemoveModule(ParticleModule module)
