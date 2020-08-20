@@ -11,11 +11,11 @@ using Vector2 = System.Numerics.Vector2;
 using MGVector2 = Microsoft.Xna.Framework.Vector2;
 using System.Runtime.InteropServices;
 using SE.Utility;
+using System.Buffers;
 
 namespace SE.Particles
 {
     // TODO: Needs some massive fucking improvement.
-    // TODO: Support texture source rectangles: This is partially implemented. Need to clean it up!
     public unsafe class ParticleRenderer : IDisposable
     {
         private Game game => ParticleEngine.Game;
@@ -32,7 +32,6 @@ namespace SE.Particles
 
         private Effect effect;
         private Matrix world, view, projection;
-        private Vector2 particleSize;
         private Emitter emitter;
 
         public ParticleRenderer(Emitter emitter)
@@ -49,23 +48,15 @@ namespace SE.Particles
                 Particle* tail = arrPtr + emitter.NumActive;
                 int i = 0;
                 for (Particle* p = arrPtr; p < tail; p++, i++) {
-
-                    // TODO: There's a better way to do this lol.
-                    Vector2 texSize = emitter.TextureSize;
                     Vector2 offset = new Vector2(p->SourceRectangle.X, p->SourceRectangle.Y);
-
                     instanceData[i].InstanceScale = p->Scale;
-
                     instanceData[i].InstanceRotation = p->SpriteRotation;
-
-                    instanceData[i].TextureCoordOffset = offset / texSize;
-
+                    instanceData[i].TextureCoordOffset = offset / emitter.TextureSize;
                     instanceData[i].InstanceColor = new Color(p->Color.X / 360, p->Color.Y, p->Color.Z, p->Color.W);
                 }
             }
         }
 
-        // TODO.
         public void Draw(Vector2 cameraPosition)
         {
             // Update positions.
@@ -100,13 +91,7 @@ namespace SE.Particles
 
         internal void Initialize()
         {
-            bool useSpriteBatchProjection = true;
-
-            // TODO: Temporary.
-            particleSize = new Vector2(32, 32);
-
-            var viewPort = game.GraphicsDevice.Viewport;
-            float aspect = viewPort.Width / viewPort.Height;
+            Viewport viewPort = game.GraphicsDevice.Viewport;
 
             world = Matrix.Identity;
             view = Matrix.CreateLookAt(new Vector3(0, 0, 0), Vector3.Forward, Vector3.Up);
@@ -118,20 +103,38 @@ namespace SE.Particles
             InitializeBuffers();
         }
 
-        private void InitializeBuffers()
+        internal void SetupVertexBuffer()
         {
             // Create a single quad origin is dead center of the quad it could be top left instead.
-            float halfWidth = particleSize.X / 2;
-            float halfHeight = particleSize.Y / 2;
-            float Left = -halfWidth; float Right = halfWidth;
-            float Top = -halfHeight; float Bottom = halfHeight;
+            Int2 particleSize = emitter.ParticleSize;
 
-            // TODO: Need to correctly set up spritesheet texture coords here. Needs to be sized for the original portion.
+            Vector2 sizeFloat = new Vector2(
+                emitter.ParticleSize.X / emitter.TextureSize.X,
+                emitter.ParticleSize.Y / emitter.TextureSize.Y);
+
+            float halfWidth = particleSize.X / 2.0f;
+            float halfHeight = particleSize.Y / 2.0f;
+            float left = -halfWidth; float right = halfWidth;
+            float top = -halfHeight; float bottom = halfHeight;
+
             VertexPositionTexture[] vertices = new VertexPositionTexture[4];
-            vertices[0] = new VertexPositionTexture() { Position = new Vector3(Left, Top, 0f), TextureCoordinate = new Vector2(0f, 0f) };
-            vertices[1] = new VertexPositionTexture() { Position = new Vector3(Left, Bottom, 0f), TextureCoordinate = new Vector2(0f, 0.2f) };
-            vertices[2] = new VertexPositionTexture() { Position = new Vector3(Right, Bottom, 0f), TextureCoordinate = new Vector2(0.2f, 0.2f) };
-            vertices[3] = new VertexPositionTexture() { Position = new Vector3(Right, Top, 0f), TextureCoordinate = new Vector2(0.2f, 0f) };
+            vertices[0] = new VertexPositionTexture() { Position = new Vector3(left, top, 0f), TextureCoordinate = new Vector2(0f, 0f) };
+            vertices[1] = new VertexPositionTexture() { Position = new Vector3(left, bottom, 0f), TextureCoordinate = new Vector2(0f, sizeFloat.Y) };
+            vertices[2] = new VertexPositionTexture() { Position = new Vector3(right, bottom, 0f), TextureCoordinate = new Vector2(sizeFloat.X, sizeFloat.Y) };
+            vertices[3] = new VertexPositionTexture() { Position = new Vector3(right, top, 0f), TextureCoordinate = new Vector2(sizeFloat.X, 0f) };
+
+            vertexBuffer.SetData(vertices);
+        }
+
+        private void InitializeBuffers()
+        {
+            int particlesLength = emitter.Particles.Length;
+
+            indexBuffer = new IndexBuffer(gd, typeof(int), 6, BufferUsage.WriteOnly);
+            vertexBuffer = new VertexBuffer(gd, VertexPositionTexture.VertexDeclaration, 4, BufferUsage.WriteOnly);
+            instanceBuffer = new VertexBuffer(gd, InstanceData.VertexDeclaration, particlesLength, BufferUsage.WriteOnly);
+
+            SetupVertexBuffer();
 
             // set up the indice stuff.
             int[] indices = new int[6];
@@ -144,20 +147,14 @@ namespace SE.Particles
             }
 
             // set up the instance stuff
-
-            int particlesLength = emitter.Particles.Length;
-            instanceData = new InstanceData[particlesLength];
+            instanceData = ArrayPool<InstanceData>.Shared.Rent(particlesLength);
             for (int i = 0; i < particlesLength; ++i) {
                 instanceData[i].InstanceColor = Color.White;
                 instanceData[i].InstancePosition = new Vector3(0, 0, 0);
             }
 
             // create buffers and set the data to them.
-            indexBuffer = new IndexBuffer(gd, typeof(int), 6, BufferUsage.WriteOnly);
             indexBuffer.SetData(indices);
-            vertexBuffer = new VertexBuffer(gd, VertexPositionTexture.VertexDeclaration, 4, BufferUsage.WriteOnly);
-            vertexBuffer.SetData(vertices);
-            instanceBuffer = new VertexBuffer(gd, InstanceData.VertexDeclaration, particlesLength, BufferUsage.WriteOnly);
             instanceBuffer.SetData(instanceData);
 
             // create the bindings.
@@ -169,6 +166,7 @@ namespace SE.Particles
         {
             instanceBuffer?.Dispose();
             effect?.Dispose();
+            ArrayPool<InstanceData>.Shared.Return(instanceData);
         }
     }
 

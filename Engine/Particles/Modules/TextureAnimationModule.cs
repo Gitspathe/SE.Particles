@@ -12,10 +12,27 @@ namespace SE.Particles.Modules
 
         private Mode loopMode;
 
+        private void ApplyToEmitter()
+        {
+            if(Emitter == null)
+                return;
+
+            Emitter.ParticleSize = new Int2(
+                (int)Emitter.TextureSize.X / SheetColumns, 
+                (int)Emitter.TextureSize.Y / SheetRows);
+        }
+
         public void SetOverLifetime(int sheetRows, int sheetColumns)
         {
             SheetRows = sheetRows;
             SheetColumns = sheetColumns;
+            ApplyToEmitter();
+        }
+
+        public override void OnInitialize()
+        {
+            base.OnInitialize();
+            ApplyToEmitter();
         }
 
         public override unsafe void OnUpdate(float deltaTime, Particle* arrayPtr, int length)

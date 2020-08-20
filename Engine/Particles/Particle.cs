@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
 
@@ -21,7 +22,7 @@ namespace SE.Particles
         public float InitialLife;
         public float TimeAlive;
         public float layerDepth;     // Draw order.
-        public Int4 SourceRectangle; // Texture source rectangle. X, Y, Width, Height.
+        public Int4 SourceRectangle;
 
         public static readonly int SizeInBytes = Marshal.SizeOf(typeof(Particle));
 
@@ -40,12 +41,12 @@ namespace SE.Particles
             TimeAlive = timeAlive;
             InitialLife = timeAlive;
             layerDepth = 0.0f;
-            SourceRectangle = new Int4(0, 0, 1, 1);
+            SourceRectangle = new Int4(0, 0, 128, 128);
         }
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct Int4
+    public struct Int4 : IEquatable<Int4>
     {
         public int X;
         public int Y;
@@ -59,5 +60,32 @@ namespace SE.Particles
             Width = width;
             Height = height;
         }
+
+        public bool Equals(Int4 other) 
+            => X == other.X && Y == other.Y && Width == other.Width && Height == other.Height;
+        public override bool Equals(object obj) 
+            => obj is Int4 other && Equals(other);
+        public override int GetHashCode() 
+            => X ^ Y ^ Width ^ Height;
+    }
+    
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Int2 : IEquatable<Int2>
+    {
+        public int X;
+        public int Y;
+
+        public Int2(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
+
+        public bool Equals(Int2 other) 
+            => X == other.X && Y == other.Y;
+        public override bool Equals(object obj) 
+            => obj is Int2 other && Equals(other);
+        public override int GetHashCode() 
+            => X ^ Y;
     }
 }
