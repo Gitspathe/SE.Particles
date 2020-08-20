@@ -286,6 +286,9 @@ namespace SE.Particles
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+
+                // Update instance data.
+                Renderer.UpdateBuffers();
             }
             
             lastPosition = Position;

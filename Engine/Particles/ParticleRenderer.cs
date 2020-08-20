@@ -10,6 +10,7 @@ using Vector3 = Microsoft.Xna.Framework.Vector3;
 using Vector2 = System.Numerics.Vector2;
 using MGVector2 = Microsoft.Xna.Framework.Vector2;
 using System.Runtime.InteropServices;
+using SE.Utility;
 
 namespace SE.Particles
 {
@@ -41,30 +42,46 @@ namespace SE.Particles
             Initialize();
         }
 
-        // TODO.
-        public void Draw(Vector2 cameraPosition)
+        internal void UpdateBuffers()
         {
             // copy to instance buffer.
             fixed(Particle* arrPtr = emitter.Particles) {
-                Particle* copy = arrPtr;
-                Parallel.For(0, emitter.NumActive, (i) => {
-                    Particle* p = copy + i;
+                Particle* tail = arrPtr + emitter.NumActive;
+                int i = 0;
+                for (Particle* p = arrPtr; p < tail; p++, i++) {
 
                     // TODO: There's a better way to do this lol.
                     Vector2 texSize = emitter.TextureSize;
                     Vector2 offset = new Vector2(p->SourceRectangle.X, p->SourceRectangle.Y);
 
+                    instanceData[i].InstanceScale = p->Scale;
+
+                    instanceData[i].InstanceRotation = p->SpriteRotation;
 
                     instanceData[i].TextureCoordOffset = offset / texSize;
 
+                    instanceData[i].InstanceColor = new Color(p->Color.X / 360, p->Color.Y, p->Color.Z, p->Color.W);
+                }
+            }
+        }
+
+        // TODO.
+        public void Draw(Vector2 cameraPosition)
+        {
+            // Update positions.
+            fixed(Particle* arrPtr = emitter.Particles) {
+                Particle* copy = arrPtr;
+                QuickParallel.For(0, emitter.NumActive, (i) => {
+                    Particle* p = copy + i;
                     instanceData[i].InstancePosition = new Vector3(
                         p->Position.X - cameraPosition.X, 
                         p->Position.Y - cameraPosition.Y, 
                         p->layerDepth);
-                    
-                    instanceData[i].InstanceColor = new Color(p->Color.X / 360, p->Color.Y, p->Color.Z, p->Color.W);
                 });
             }
+
+            // Blend state.
+            gd.BlendState = BlendState.Additive;
 
             // Update parameters. May only need to be set when one of these values actually changes, not every frame.
             effect.CurrentTechnique = effect.Techniques["ParticleInstancing"];
@@ -161,7 +178,8 @@ namespace SE.Particles
         public Vector3 InstancePosition;
         public Color InstanceColor;
         public Vector2 TextureCoordOffset;
-        // TODO: Instance scale.
+        public Vector2 InstanceScale;
+        public float InstanceRotation;
 
         public static readonly VertexDeclaration VertexDeclaration;
         VertexDeclaration IVertexType.VertexDeclaration => VertexDeclaration;
@@ -171,7 +189,9 @@ namespace SE.Particles
             var elements = new VertexElement[] {
                 new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 1), // Note the 1 not a 0 used by the VertexPositionTexture UsageIndex.
                 new VertexElement(12, VertexElementFormat.Color, VertexElementUsage.Color, 1),
-                new VertexElement(16, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 1)
+                new VertexElement(16, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 1),
+                new VertexElement(24, VertexElementFormat.Vector2, VertexElementUsage.Position, 2),
+                new VertexElement(32, VertexElementFormat.Single, VertexElementUsage.Position, 3)
             };
             VertexDeclaration = new VertexDeclaration(elements);
         }
