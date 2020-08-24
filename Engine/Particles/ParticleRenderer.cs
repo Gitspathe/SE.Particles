@@ -16,6 +16,7 @@ using System.Buffers;
 namespace SE.Particles
 {
     // TODO: Needs some massive fucking improvement.
+    // TODO: Better batching? Each particle renderer current uses an entire draw call.
     public unsafe class ParticleRenderer : IDisposable
     {
         private Game game => ParticleEngine.Game;
@@ -53,30 +54,31 @@ namespace SE.Particles
                     instanceData[i].InstanceRotation = p->SpriteRotation;
                     instanceData[i].TextureCoordOffset = offset / emitter.TextureSize;
                     instanceData[i].InstanceColor = new Color(p->Color.X / 360, p->Color.Y, p->Color.Z, p->Color.W);
+                    instanceData[i].InstancePosition = new Vector3(p->Position.X, p->Position.Y, p->layerDepth);
                 }
             }
         }
 
-        public void Draw(Vector2 cameraPosition)
+        public void Draw(Vector2 cameraPosition, Matrix cameraMatrix)
         {
             // Update positions.
-            fixed(Particle* arrPtr = emitter.Particles) {
-                Particle* copy = arrPtr;
-                QuickParallel.For(0, emitter.NumActive, (i) => {
-                    Particle* p = copy + i;
-                    instanceData[i].InstancePosition = new Vector3(
-                        p->Position.X - cameraPosition.X, 
-                        p->Position.Y - cameraPosition.Y, 
-                        p->layerDepth);
-                });
-            }
+            //fixed(Particle* arrPtr = emitter.Particles) {
+            //    Particle* copy = arrPtr;
+            //    QuickParallel.For(0, emitter.NumActive, (i) => {
+            //        Particle* p = copy + i;
+            //        instanceData[i].InstancePosition = new Vector3(
+            //            p->Position.X - cameraPosition.X, 
+            //            p->Position.Y - cameraPosition.Y, 
+            //            p->layerDepth);
+            //    });
+            //}
 
             // Blend state.
             gd.BlendState = BlendState.Additive;
 
             // Update parameters. May only need to be set when one of these values actually changes, not every frame.
             effect.CurrentTechnique = effect.Techniques["ParticleInstancing"];
-            effect.Parameters["World"].SetValue(ParticleEngine.WorldMatrix);
+            effect.Parameters["World"].SetValue(cameraMatrix);
             effect.Parameters["ParticleTexture"].SetValue(emitter.Texture);
             instanceBuffer.SetData(instanceData);
 
@@ -165,7 +167,8 @@ namespace SE.Particles
         public void Dispose()
         {
             instanceBuffer?.Dispose();
-            effect?.Dispose();
+            vertexBuffer?.Dispose();
+            indexBuffer?.Dispose();
             ArrayPool<InstanceData>.Shared.Return(instanceData);
         }
     }

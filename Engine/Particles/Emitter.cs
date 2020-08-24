@@ -231,7 +231,8 @@ namespace SE.Particles
             ParticleEngine.AddEmitter(this);
 
         #if MONOGAME
-            Renderer = new ParticleRenderer(this);
+            if(ParticleEngine.GraphicsDeviceManager.GraphicsDevice != null)
+                Renderer = new ParticleRenderer(this);
         #endif
         }
 
@@ -305,7 +306,7 @@ namespace SE.Particles
                 }
 
                 // Update instance data.
-                Renderer.UpdateBuffers();
+                Renderer?.UpdateBuffers();
             }
             
             lastPosition = Position;
@@ -676,7 +677,7 @@ namespace SE.Particles
                 modules.Dispose();
             }
         #if MONOGAME
-            Renderer.Dispose();
+            Renderer?.Dispose();
         #endif
             isDisposed = true;
         }
