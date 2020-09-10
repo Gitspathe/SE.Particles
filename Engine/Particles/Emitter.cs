@@ -120,7 +120,9 @@ namespace SE.Particles
 
                     particleSize = new Int2(64, 64);
                 }
-                Renderer.SetupVertexBuffer();
+            #if MONOGAME
+                Renderer?.SetupVertexBuffer();
+            #endif
             }
         }
         private Int2 particleSize = new Int2(64, 64);
@@ -231,7 +233,7 @@ namespace SE.Particles
             ParticleEngine.AddEmitter(this);
 
         #if MONOGAME
-            if(ParticleEngine.GraphicsDeviceManager.GraphicsDevice != null)
+            if(ParticleEngine.GraphicsDeviceManager.GraphicsDevice != null && ParticleEngine.UseParticleRenderer)
                 Renderer = new ParticleRenderer(this);
         #endif
         }
@@ -306,7 +308,9 @@ namespace SE.Particles
                 }
 
                 // Update instance data.
+            #if MONOGAME
                 Renderer?.UpdateBuffers();
+            #endif
             }
             
             lastPosition = Position;

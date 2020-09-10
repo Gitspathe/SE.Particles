@@ -32,13 +32,13 @@ namespace SE.Particles
         private VertexBufferBinding instanceBufferBinding;
 
         private Effect effect;
-        private Matrix world, view, projection;
+        private Matrix view, projection;
         private Emitter emitter;
 
         public ParticleRenderer(Emitter emitter)
         {
             this.emitter = emitter;
-            effect = ParticleEngine.particleInstanceEffect;
+            effect = ParticleEngine.ParticleInstanceEffect;
             Initialize();
         }
 
@@ -49,36 +49,29 @@ namespace SE.Particles
                 Particle* tail = arrPtr + emitter.NumActive;
                 int i = 0;
                 for (Particle* p = arrPtr; p < tail; p++, i++) {
+                    ref InstanceData data = ref instanceData[i];
                     Vector2 offset = new Vector2(p->SourceRectangle.X, p->SourceRectangle.Y);
-                    instanceData[i].InstanceScale = p->Scale;
-                    instanceData[i].InstanceRotation = p->SpriteRotation;
-                    instanceData[i].TextureCoordOffset = offset / emitter.TextureSize;
-                    instanceData[i].InstanceColor = new Color(p->Color.X / 360, p->Color.Y, p->Color.Z, p->Color.W);
-                    instanceData[i].InstancePosition = new Vector3(p->Position.X, p->Position.Y, p->layerDepth);
+                    data.InstanceScale = p->Scale;
+                    data.InstanceRotation = p->SpriteRotation;
+                    data.TextureCoordOffset = offset / emitter.TextureSize;
+                    data.InstanceColor = new Color(p->Color.X / 360, p->Color.Y, p->Color.Z, p->Color.W);
+                    data.InstancePosition = new Vector3(p->Position.X, p->Position.Y, p->layerDepth);
                 }
             }
         }
 
-        public void Draw(Vector2 cameraPosition, Matrix cameraMatrix)
+        public void Draw(Matrix cameraMatrix)
         {
-            // Update positions.
-            //fixed(Particle* arrPtr = emitter.Particles) {
-            //    Particle* copy = arrPtr;
-            //    QuickParallel.For(0, emitter.NumActive, (i) => {
-            //        Particle* p = copy + i;
-            //        instanceData[i].InstancePosition = new Vector3(
-            //            p->Position.X - cameraPosition.X, 
-            //            p->Position.Y - cameraPosition.Y, 
-            //            p->layerDepth);
-            //    });
-            //}
-
-            // Blend state.
+            // Setup various graphics device stuff.
+            // TODO: See how SpriteBatch handles manually setting these!
             gd.BlendState = BlendState.Additive;
+            gd.DepthStencilState = DepthStencilState.None;
+            gd.SamplerStates[0] = SamplerState.PointClamp;
+            gd.RasterizerState = RasterizerState.CullCounterClockwise;
 
             // Update parameters. May only need to be set when one of these values actually changes, not every frame.
             effect.CurrentTechnique = effect.Techniques["ParticleInstancing"];
-            effect.Parameters["World"].SetValue(cameraMatrix);
+            effect.Parameters["World"].SetValue(cameraMatrix * projection);
             effect.Parameters["ParticleTexture"].SetValue(emitter.Texture);
             instanceBuffer.SetData(instanceData);
 
@@ -91,16 +84,13 @@ namespace SE.Particles
             gd.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, 2, emitter.NumActive);
         }
 
-        internal void Initialize()
+        private void Initialize()
         {
             Viewport viewPort = game.GraphicsDevice.Viewport;
 
-            world = Matrix.Identity;
             view = Matrix.CreateLookAt(new Vector3(0, 0, 0), Vector3.Forward, Vector3.Up);
             projection = Matrix.CreateOrthographicOffCenter(0, viewPort.Width, viewPort.Height, 0, 0, -10);
-
-            effect.Parameters["View"].SetValue(view);
-            effect.Parameters["Projection"].SetValue(projection);
+            projection = view * projection;
 
             InitializeBuffers();
         }
@@ -120,10 +110,10 @@ namespace SE.Particles
             float top = -halfHeight; float bottom = halfHeight;
 
             VertexPositionTexture[] vertices = new VertexPositionTexture[4];
-            vertices[0] = new VertexPositionTexture() { Position = new Vector3(left, top, 0f), TextureCoordinate = new Vector2(0f, 0f) };
-            vertices[1] = new VertexPositionTexture() { Position = new Vector3(left, bottom, 0f), TextureCoordinate = new Vector2(0f, sizeFloat.Y) };
-            vertices[2] = new VertexPositionTexture() { Position = new Vector3(right, bottom, 0f), TextureCoordinate = new Vector2(sizeFloat.X, sizeFloat.Y) };
-            vertices[3] = new VertexPositionTexture() { Position = new Vector3(right, top, 0f), TextureCoordinate = new Vector2(sizeFloat.X, 0f) };
+            vertices[0] = new VertexPositionTexture { Position = new Vector3(left, top, 0f), TextureCoordinate = new Vector2(0f, 0f) };
+            vertices[1] = new VertexPositionTexture { Position = new Vector3(left, bottom, 0f), TextureCoordinate = new Vector2(0f, sizeFloat.Y) };
+            vertices[2] = new VertexPositionTexture { Position = new Vector3(right, bottom, 0f), TextureCoordinate = new Vector2(sizeFloat.X, sizeFloat.Y) };
+            vertices[3] = new VertexPositionTexture { Position = new Vector3(right, top, 0f), TextureCoordinate = new Vector2(sizeFloat.X, 0f) };
 
             vertexBuffer.SetData(vertices);
         }
@@ -187,7 +177,7 @@ namespace SE.Particles
 
         static InstanceData()
         {
-            var elements = new VertexElement[] {
+            var elements = new[] {
                 new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 1), // Note the 1 not a 0 used by the VertexPositionTexture UsageIndex.
                 new VertexElement(12, VertexElementFormat.Color, VertexElementUsage.Color, 1),
                 new VertexElement(16, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 1),
@@ -198,6 +188,7 @@ namespace SE.Particles
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct VertexPositionTexture : IVertexType
     {
         public Vector3 Position;
@@ -207,9 +198,9 @@ namespace SE.Particles
 
         static VertexPositionTexture()
         {
-            var elements = new VertexElement[] {
+            var elements = new[] {
                 new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
-                new VertexElement(12, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 0),
+                new VertexElement(12, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 0)
             };
             VertexDeclaration = new VertexDeclaration(elements);
         }

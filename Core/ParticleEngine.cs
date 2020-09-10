@@ -10,7 +10,6 @@ using SE.Particles.Shapes;
 using SE.Utility;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
-using System.Runtime.CompilerServices;
 
 #if MONOGAME
 using Microsoft.Xna.Framework.Graphics;
@@ -29,7 +28,25 @@ namespace SE.Core
     #if MONOGAME
         internal static Game Game;
         internal static GraphicsDeviceManager GraphicsDeviceManager;
-        internal static Effect particleInstanceEffect;
+        internal static Effect ParticleInstanceEffect;
+
+        // TODO: Toggling this while running causes some weird shit.
+        public static bool UseParticleRenderer {
+            get => useParticleRenderer;
+            set {
+                if(GraphicsDeviceManager?.GraphicsDevice == null || useParticleRenderer == value)
+                    return;
+
+                useParticleRenderer = value;
+                foreach (Emitter e in Emitters) {
+                    e.Renderer?.Dispose();
+                    if (useParticleRenderer) {
+                        e.Renderer = new ParticleRenderer(e);
+                    }
+                }
+            }
+        }
+        private static bool useParticleRenderer = true;
     #endif
 
         internal static bool UseArrayPool => AllocationMode == ParticleAllocationMode.ArrayPool;
@@ -85,9 +102,10 @@ namespace SE.Core
             GraphicsDeviceManager = gdm;
 
             // TODO: Load particle instancing effect. Need to improve / make flexible.
+            // TODO: Need to embed the instancing shader into the library. (https://jjagg.github.io/MonoGame-docfx/manual/tools/2mgfx.html)
             if (gdm.GraphicsDevice != null) {
-                particleInstanceEffect = game.Content.Load<Effect>("InstancingShader");
-                particleInstanceEffect.CurrentTechnique = particleInstanceEffect.Techniques["ParticleInstancing"];
+                ParticleInstanceEffect = game.Content.Load<Effect>("InstancingShader");
+                ParticleInstanceEffect.CurrentTechnique = ParticleInstanceEffect.Techniques["ParticleInstancing"];
             }
         }
         #else

@@ -14,86 +14,9 @@ namespace SE.Particles.Modules.Native
         public NativeModule()
         {
             NativeModulePtr = (Module*)nativeModule_Create();
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
-            {
-                NativeAlphaModule alpha = new NativeAlphaModule(this);
-                alpha.SetLerp(0.0f);
-            }
+            
+            NativeAlphaModule alpha = new NativeAlphaModule(this);
+            alpha.SetLerp(0.0f);
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
@@ -135,19 +58,25 @@ namespace SE.Particles.Modules.Native
             isDisposed = true;
         }
 
-        [DllImport("SE.Native")]
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void* nativeModule_Create();
-        [DllImport("SE.Native")]
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_AddSubmodule(Module* modulePtr, Submodule* submodulePtr);
-        [DllImport("SE.Native")]
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_RemoveSubmodule(Module* modulePtr, Submodule* submodulePtr);
-        [DllImport("SE.Native")]
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_OnInitialize(Module* modulePtr, int particleArrayLength);
-        [DllImport("SE.Native")]
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_OnParticlesActivated(Module* modulePtr, int* particleIndexArr, Particle* particleArrPtr, int length);
-        [DllImport("SE.Native")]
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_OnUpdate(Module* modulePtr, float deltaTime, Particle* particleArrPtr, int length);
-        [DllImport("SE.Native")]
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_Delete(Module* modulePtr);
     }
 
