@@ -21,9 +21,9 @@ namespace SE.Core
 {
     public static class ParticleEngine
     {
-        private static readonly QuickList<Emitter> Emitters = new QuickList<Emitter>();
-        private static readonly QuickList<Emitter> VisibleEmitters = new QuickList<Emitter>();
-        private static readonly QuickList<AreaModule> AreaModules = new QuickList<AreaModule>();
+        private static readonly QuickList<Emitter> emitters = new QuickList<Emitter>();
+        private static readonly QuickList<Emitter> visibleEmitters = new QuickList<Emitter>();
+        private static readonly QuickList<AreaModule> areaModules = new QuickList<AreaModule>();
     
     #if MONOGAME
         internal static Game Game;
@@ -38,7 +38,7 @@ namespace SE.Core
                     return;
 
                 useParticleRenderer = value;
-                foreach (Emitter e in Emitters) {
+                foreach (Emitter e in emitters) {
                     e.Renderer?.Dispose();
                     if (useParticleRenderer) {
                         e.Renderer = new ParticleRenderer(e);
@@ -54,7 +54,7 @@ namespace SE.Core
         public static int ParticleCount { 
             get  { 
                 int total = 0;
-                foreach (Emitter emitter in Emitters) {
+                foreach (Emitter emitter in emitters) {
                     total += emitter.ActiveParticles.Length;
                 }
                 return total;
@@ -148,9 +148,9 @@ namespace SE.Core
                 } break;
                 case UpdateMode.Synchronous: {
                     // Update area modules.
-                    foreach (AreaModule aMod in AreaModules) {
-                        for (int i = 0; i < Emitters.Count; i++) {
-                            Emitter e = Emitters.Array[i];
+                    foreach (AreaModule aMod in areaModules) {
+                        for (int i = 0; i < emitters.Count; i++) {
+                            Emitter e = emitters.Array[i];
                             if (aMod.Shape.Intersects(e.Bounds)) {
                                 e.AddAreaModule(aMod);
                                 aMod.AddEmitter(e);
@@ -162,8 +162,8 @@ namespace SE.Core
                     }
 
                     // Update emitters.
-                    for (int i = 0; i < VisibleEmitters.Count; i++) {
-                        VisibleEmitters.Array[i].Update(deltaTime);
+                    for (int i = 0; i < visibleEmitters.Count; i++) {
+                        visibleEmitters.Array[i].Update(deltaTime);
                     }
                 } break;
                 default:
@@ -189,14 +189,14 @@ namespace SE.Core
 
         private static void FindVisible(Span<System.Numerics.Vector4> viewBounds)
         {
-            VisibleEmitters.Clear();
+            visibleEmitters.Clear();
             if (viewBounds == default) {
-                VisibleEmitters.AddRange(Emitters);
+                visibleEmitters.AddRange(emitters);
             } else {
-                for (int i = 0; i < Emitters.Count; i++) {
-                    Emitter emitter = Emitters.Array[i];
+                for (int i = 0; i < emitters.Count; i++) {
+                    Emitter emitter = emitters.Array[i];
                     if (emitter.Enabled && CheckIntersection(emitter.Bounds, viewBounds)) {
-                        VisibleEmitters.Add(emitter);
+                        visibleEmitters.Add(emitter);
                         emitter.IsVisible = true;
                     } else {
                         emitter.Clear();
@@ -207,7 +207,7 @@ namespace SE.Core
         }
 
         public static QuickList<Emitter> GetEmitters()
-            => Emitters;
+            => emitters;
 
         public static void GetEmitters(BlendMode blendMode, QuickList<Emitter> existing, SearchFlags search = SearchFlags.None)
             => ContainerManager.Get(blendMode, existing, search);
@@ -222,7 +222,7 @@ namespace SE.Core
             => ContainerManager.Get(key, existing, search);
 
         public static QuickList<Emitter> GetVisibleEmitters()
-            => VisibleEmitters;
+            => visibleEmitters;
 
         public static EmitterContainer GetContainer((byte, BlendMode) key)
             => ContainerManager.GetContainer(key);
@@ -233,8 +233,8 @@ namespace SE.Core
         private static void CreateTasks(float deltaTime)
         {
             updateTask = Task.Factory.StartNew(() => {
-                QuickParallel.ForEach(AreaModules, aMod => {
-                    foreach (Emitter e in Emitters) {
+                QuickParallel.ForEach(areaModules, aMod => {
+                    foreach (Emitter e in emitters) {
                         if (aMod.Shape.Intersects(e.Bounds)) {
                             e.AddAreaModule(aMod);
                             aMod.AddEmitter(e);
@@ -246,7 +246,7 @@ namespace SE.Core
                 });
             }).ContinueWith(t1 => {
                 // Update emitters.
-                QuickParallel.ForEach(VisibleEmitters, (emitters, count) => {
+                QuickParallel.ForEach(visibleEmitters, (emitters, count) => {
                     for (int i = 0; i < count; i++) {
                         emitters[i].Update(deltaTime);
                     }
@@ -282,8 +282,8 @@ namespace SE.Core
             if(emitter.ParticleEngineIndex != -1)
                 return;
 
-            emitter.ParticleEngineIndex = Emitters.Count;
-            Emitters.Add(emitter);
+            emitter.ParticleEngineIndex = emitters.Count;
+            emitters.Add(emitter);
             ContainerManager.Add(emitter);
             foreach (AreaModule aModule in emitter.GetAreaModules()) {
                 aModule.AddEmitter(emitter);
@@ -295,7 +295,7 @@ namespace SE.Core
             if(emitter.ParticleEngineIndex == -1)
                 return;
 
-            Emitters.Remove(emitter);
+            emitters.Remove(emitter);
             emitter.ParticleEngineIndex = -1;
             ContainerManager.Remove(emitter);
             foreach (AreaModule aModule in emitter.GetAreaModules()) {
@@ -310,7 +310,7 @@ namespace SE.Core
                 return;
 
             module.AddedToEngine = true;
-            AreaModules.Add(module);
+            areaModules.Add(module);
             foreach (Emitter e in module.GetEmitters()) {
                 e.AddAreaModule(module);
             }
@@ -319,7 +319,7 @@ namespace SE.Core
         internal static void RemoveAreaModule(AreaModule module)
         {
             module.AddedToEngine = false;
-            AreaModules.Remove(module);
+            areaModules.Remove(module);
             foreach (Emitter e in module.GetEmitters()) {
                 e.RemoveAreaModule(module);
             }
