@@ -200,7 +200,7 @@ namespace SE.Core
             }
         }
 
-        private static void FindVisible(Span<System.Numerics.Vector4> viewBounds)
+        private static void FindVisible(Span<Vector4> viewBounds)
         {
             visibleEmitters.Clear();
             if (viewBounds == default) {
