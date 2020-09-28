@@ -55,7 +55,20 @@ namespace SE.Core
             get  { 
                 int total = 0;
                 foreach (Emitter emitter in emitters) {
-                    total += emitter.ActiveParticles.Length;
+                    if(emitter.Enabled)
+                        total += emitter.ActiveParticles.Length;
+                }
+                return total;
+            }
+        }
+
+        public static int EmitterCount {
+            get
+            {
+                int total = 0;
+                foreach (Emitter emitter in emitters) {
+                    if (emitter.Enabled)
+                        total += 1;
                 }
                 return total;
             }
