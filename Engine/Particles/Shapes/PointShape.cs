@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using SE.Core.Extensions;
+﻿using SE.Core.Extensions;
 using System.Numerics;
 using Random = SE.Utility.Random;
 using Vector2 = System.Numerics.Vector2;

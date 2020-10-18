@@ -21,10 +21,10 @@ namespace SE.Particles
         private const float _ONE_OVER_TWO = 1.0f / 2.0f;
         private const float _ONE_OVER_SIX = 1.0f / 6.0f;
 
+#if MONOGAME
         public static Vector4 ToVector4(this Rectangle rectangle)
             => new Vector4(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
-    
-#if MONOGAME
+
         public static Rectangle ToRectangle(this Vector4 vector)
             => new Rectangle((int)vector.X, (int)vector.Y, (int)vector.Z, (int)vector.W);
 #endif

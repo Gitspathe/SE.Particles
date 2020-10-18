@@ -241,6 +241,13 @@ namespace SE.Particles
         public Emitter(int capacity = 2048, IEmitterShape shape = null) 
             : this(new Vector2(512.0f, 512.0f), capacity, shape) { }
 
+        public Particle* GetParticlePointer()
+        {
+            fixed (Particle* ptr = Particles) {
+                return ptr;
+            }
+        }
+
         internal void Update(float deltaTime)
         {
             lock(collectionLock){
