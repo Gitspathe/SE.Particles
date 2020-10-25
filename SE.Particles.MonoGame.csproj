@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net452;netstandard2.0;netstandard2.1</TargetFrameworks>
     <Platforms>AnyCPU</Platforms>
     <Authors>Gitspathe</Authors>
     <Description>Fast 2D CPU particles with optional MonoGame support.</Description>
@@ -12,6 +12,7 @@
     <RootNamespace>SE</RootNamespace>
     <PackageId>SE.Particles.MonoGame</PackageId>
     <AssemblyName>SE.Particles.MonoGame</AssemblyName>
+    <Version>0.0.1.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -35,9 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="SE.Utility">
-      <HintPath>..\SE.Utility\bin\$(Configuration)\$(TargetFramework)\SE.Utility.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\SE.Utility\SE.Utility.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.1' ">
@@ -45,8 +44,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(DefineConstants.Contains('MONOGAME'))">
-    <PackageReference Include="MonoGame.Framework.Portable" Version="3.7.1.189">
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.0.1641">
       <NoWarn>NU1701;</NoWarn>
+      <PrivateAssets>All</PrivateAssets>
     </PackageReference>
   </ItemGroup>
 
