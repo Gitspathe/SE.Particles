@@ -233,7 +233,7 @@ namespace SE.Particles
             ParticleEngine.AddEmitter(this);
 
         #if MONOGAME
-            if(ParticleEngine.GraphicsDeviceManager.GraphicsDevice != null && ParticleEngine.UseParticleRenderer)
+            if(ParticleEngine.GraphicsDeviceManager.GraphicsDevice != null)
                 Renderer = new ParticleRenderer(this);
         #endif
         }

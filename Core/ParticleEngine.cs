@@ -38,12 +38,6 @@ namespace SE.Core
                     return;
 
                 useParticleRenderer = value;
-                foreach (Emitter e in emitters) {
-                    e.Renderer?.Dispose();
-                    if (useParticleRenderer) {
-                        e.Renderer = new ParticleRenderer(e);
-                    }
-                }
             }
         }
         private static bool useParticleRenderer = true;

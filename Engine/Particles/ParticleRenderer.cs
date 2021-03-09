@@ -140,7 +140,7 @@ namespace SE.Particles
 
             // set up the instance stuff
             instanceData = ArrayPool<InstanceData>.Shared.Rent(particlesLength);
-            for (int i = 0; i < particlesLength; ++i) {
+            for (int i = 0; i < particlesLength; i++) {
                 instanceData[i].InstanceColor = Color.White;
                 instanceData[i].InstancePosition = new Vector3(0, 0, 0);
             }
