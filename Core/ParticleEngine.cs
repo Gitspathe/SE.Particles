@@ -185,7 +185,7 @@ namespace SE.Core
                     256.0f, 
                     1024.0f);
 
-                //AreaModules.Add(mod);
+                //areaModules.Add(mod);
 
                 //AttractorModule mod2 = new AttractorModule(new CircleShape(512.0f), new System.Numerics.Vector2(2048.0f, 1024.0f));
                 //AreaModules.Add(mod2);
