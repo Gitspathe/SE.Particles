@@ -250,12 +250,18 @@ namespace SE.Particles
 
         internal void Update(float deltaTime)
         {
-            lock(collectionLock){
-                UpdateLocked(deltaTime);
+            // Lock the modules collection (modules.Array). This ensures no weird stuff happens while running asynchronously.
+            // For example, if the user adds a new module WHILE Update is running, this will prevent race conditions and such.
+            // Doesn't interfere with per-emitter multi-threading; however, this could slow down AddModule() significantly.
+            //
+            // Alternatively there could be something like a newModules collection, which replaces the real modules collection
+            // at the end of every frame, where AddModule() actually adds to newModules.
+            lock (collectionLock) {
+                UpdateInternal(deltaTime);
             }
         }
 
-        private void UpdateLocked(float deltaTime)
+        private void UpdateInternal(float deltaTime)
         {
             ParticleModule[] modulesArr = modules.Array;
             if (firstUpdate) {
@@ -314,12 +320,13 @@ namespace SE.Particles
                         throw new ArgumentOutOfRangeException();
                 }
 
-                // Update instance data.
             #if MONOGAME
+                // Update instance data.
                 Renderer?.UpdateBuffers();
             #endif
+
             }
-            
+
             lastPosition = Position;
         }
 
