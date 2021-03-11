@@ -47,6 +47,9 @@ namespace SE.Particles.Modules
                 return;
 
             rand = new float[Emitter.ParticlesLength];
+            for(int i = 0; i < rand.Length; i++) {
+                rand[i] = Random.Next(0.0f, 1.0f);
+            }
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
