@@ -10,6 +10,7 @@ namespace SE.Particles
     {
         public Vector2 Position;
         public Vector2 Scale;
+        public int ID;               // Used for identification (i.e random).
 
         // TODO: Change from Vector2 to float? (Could fully update particle transform in shader.)
         public Vector2 Direction;    // Direction the particle travels in.
@@ -25,10 +26,11 @@ namespace SE.Particles
         public static readonly int SizeInBytes = Marshal.SizeOf(typeof(Particle));
 
         public static Particle Default 
-            => new Particle(Vector2.Zero, Vector2.One, Vector4.Zero, 0f, 1.0f);
+            => new Particle(0, Vector2.Zero, Vector2.One, Vector4.Zero, 0f, 1.0f);
 
-        public Particle(Vector2 position, Vector2 scale, Vector4 color, float spriteRotation, float timeAlive)
-        { 
+        public Particle(int ID, Vector2 position, Vector2 scale, Vector4 color, float spriteRotation, float timeAlive)
+        {
+            this.ID = ID;
             Position = position;
             Scale = scale;
             Direction = Vector2.Zero;

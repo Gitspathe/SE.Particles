@@ -79,6 +79,7 @@ namespace SE.Particles.Modules
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
+            // TODO: Stop being smooth brain and move all these (in all modules) into using new ID system.
             for (int i = 0; i < particlesIndex.Length; i++) {
                 int index = particlesIndex[i];
                 startColors[index] = Emitter.Particles[index].Color;

@@ -228,6 +228,7 @@ namespace SE.Particles
             }
             for (int i = 0; i < capacity; i++) {
                 Particles[i] = Particle.Default;
+                Particles[i].ID = i;
             }
             Enabled = true;
             ParticleEngine.AddEmitter(this);
@@ -400,8 +401,18 @@ namespace SE.Particles
         {
             particle->Position = new Vector2(float.MinValue, float.MinValue);
             NumActive--;
+
+            // DO NOT MODIFY!
+            // Careful operations here to preserve particle IDs.
             if (index != NumActive) {
+                ref Particle a = ref Particles[index];
+                ref Particle b = ref Particles[NumActive];
+                int idA = a.ID;
+                int idB = b.ID;
+
                 Particles[index] = Particles[NumActive];
+                Particles[NumActive].ID = idA;
+                Particles[index].ID = idB;
             }
         }
 
