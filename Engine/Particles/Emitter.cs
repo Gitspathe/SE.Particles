@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Threading.Tasks;
 using SE.Core;
 using SE.Particles.AreaModules;
@@ -14,6 +15,7 @@ using static SE.Particles.ParticleMath;
 
 #if MONOGAME
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework;
 #endif
 
 // ReSharper disable ConvertToAutoPropertyWhenPossible
@@ -120,9 +122,7 @@ namespace SE.Particles
 
                     particleSize = new Int2(64, 64);
                 }
-            #if MONOGAME
-                Renderer?.SetupVertexBuffer();
-            #endif
+                Renderer?.OnParticleSizeChanged();
             }
         }
         private Int2 particleSize = new Int2(64, 64);
@@ -156,9 +156,9 @@ namespace SE.Particles
             }
         }
         private Texture2D texture;
-
-        public ParticleRenderer Renderer;
 #endif
+
+        public ParticleRendererBase Renderer { get; private set; }
 
         internal int ParticleEngineIndex = -1;
         internal float TimeToLive;
@@ -202,7 +202,7 @@ namespace SE.Particles
         /// <summary>Enabled/Disabled state. Disabled emitters are not updated or registered to the particle engine.</summary>
         public bool Enabled { get; set; }
 
-        public Emitter(Vector2 boundsSize, int capacity = 2048, IEmitterShape shape = null)
+        public Emitter(Vector2 boundsSize, int capacity = 2048, IEmitterShape shape = null, ParticleRendererBase renderer = null)
         {
             if (!ParticleEngine.Initialized)
                 throw new InvalidOperationException("Particle engine has not been initialized. Call ParticleEngine.Initialize() first.");
@@ -232,14 +232,51 @@ namespace SE.Particles
             Enabled = true;
             ParticleEngine.AddEmitter(this);
 
-        #if MONOGAME
-            if(ParticleEngine.GraphicsDeviceManager.GraphicsDevice != null)
-                Renderer = new ParticleRenderer(this);
-        #endif
+            // Set the renderer.
+            if (renderer != null) {
+                SetRenderer(renderer);
+            } else { 
+                if(ParticleEngine.GraphicsDeviceManager.GraphicsDevice == null)
+                    return;
+
+                // Set to default renderer since the parameter is null.
+            #if MONOGAME
+                SetRenderer(new InstancedParticleRenderer());
+            #endif
+            }
         }
 
         public Emitter(int capacity = 2048, IEmitterShape shape = null) 
             : this(new Vector2(512.0f, 512.0f), capacity, shape) { }
+
+        public void SetRenderer(ParticleRendererBase renderer)
+        {
+            Renderer?.Dispose();
+            Renderer = renderer;
+            renderer.InitializeInternal(this);
+        }
+
+        public void Draw(Matrix4x4 camMatrix)
+        {
+            if (Renderer == null)
+                throw new NullReferenceException("No renderer on emitter.");
+            if (!(Renderer is ParticleRenderer)) // TODO: Better exception.
+                throw new Exception("Invalid renderer.");
+
+            ((ParticleRenderer)Renderer).Draw(camMatrix);
+        }
+
+    #if MONOGAME
+        public void Draw(Matrix camMatrix)
+        {
+            if (Renderer == null)
+                throw new NullReferenceException("No renderer on emitter.");
+            if (!(Renderer is MGParticleRenderer)) // TODO: Better exception.
+                throw new Exception("ParticleRenderer is not a MonoGame-based renderer. Use the matrix4x4 overload instead.");
+
+            ((MGParticleRenderer)Renderer).Draw(camMatrix);
+        }
+    #endif
 
         public Particle* GetParticlePointer()
         {
@@ -320,11 +357,8 @@ namespace SE.Particles
                         throw new ArgumentOutOfRangeException();
                 }
 
-            #if MONOGAME
-                // Update instance data.
-                Renderer?.UpdateBuffers();
-            #endif
-
+                // Update renderer.
+                Renderer?.OnEmitterUpdate();
             }
 
             lastPosition = Position;
@@ -694,9 +728,7 @@ namespace SE.Particles
             lock (collectionLock) {
                 modules.Dispose();
             }
-        #if MONOGAME
             Renderer?.Dispose();
-        #endif
             isDisposed = true;
         }
     }

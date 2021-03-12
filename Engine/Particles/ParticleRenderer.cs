@@ -1,28 +1,62 @@
-﻿#if MONOGAME
-using System;
+﻿using System;
 using System.Numerics;
 using System.Threading.Tasks;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using SE.Core;
-using Vector3 = Microsoft.Xna.Framework.Vector3;
-
 using Vector2 = System.Numerics.Vector2;
-using MGVector2 = Microsoft.Xna.Framework.Vector2;
 using System.Runtime.InteropServices;
 using SE.Utility;
 using System.Buffers;
 
+#if MONOGAME
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using MGVector2 = Microsoft.Xna.Framework.Vector2;
+using Vector3 = Microsoft.Xna.Framework.Vector3;
+#endif
+
 namespace SE.Particles
 {
-    // TODO: Needs some massive fucking improvement.
-    // TODO: Better batching? Each particle renderer current uses an entire draw call.
-    public unsafe class ParticleRenderer : IDisposable
+    public abstract class ParticleRendererBase : IDisposable
     {
-        private Game game => ParticleEngine.Game;
-        private GraphicsDeviceManager gdm => ParticleEngine.GraphicsDeviceManager;
-        private GraphicsDevice gd => ParticleEngine.Game.GraphicsDevice;
+        protected internal Emitter Emitter { get; internal set; }
+        protected Game Game { get; } = ParticleEngine.Game;
+        protected GraphicsDeviceManager Gdm { get; } = ParticleEngine.GraphicsDeviceManager;
+        protected GraphicsDevice Gd { get; } = ParticleEngine.Game.GraphicsDevice;
 
+        internal void InitializeInternal(Emitter emitter)
+        {
+            Emitter = emitter;
+            Initialize();
+        }
+
+        protected internal virtual void Initialize() { }
+        protected internal virtual void OnParticleSizeChanged() { }
+        protected internal virtual void OnEmitterUpdate() { }
+
+        public abstract void Dispose();
+    }
+
+#if MONOGAME
+    public abstract class MGParticleRenderer : ParticleRendererBase
+    {
+        protected internal abstract void Draw(Matrix cameraMatrix);
+
+        public override void Dispose() { }
+    }
+#endif
+
+    public abstract class ParticleRenderer : ParticleRendererBase
+    {
+        protected internal abstract void Draw(Matrix4x4 cameraMatrix);
+
+        public override void Dispose() { }
+    }
+
+    // TODO: NativeInstancedParticleRenderer.
+
+#if MONOGAME
+    public unsafe class InstancedParticleRenderer : MGParticleRenderer
+    {
         private VertexBuffer vertexBuffer;
         private IndexBuffer indexBuffer;
         private VertexBufferBinding vertexBufferBinding;
@@ -33,18 +67,39 @@ namespace SE.Particles
 
         private Effect effect;
         private Matrix view, projection;
-        private Emitter emitter;
 
-        public ParticleRenderer(Emitter emitter)
+        public InstancedParticleRenderer()
         {
-            this.emitter = emitter;
             effect = ParticleEngine.ParticleInstanceEffect;
-            Initialize();
+        }
+
+        protected internal override void OnParticleSizeChanged()
+        {
+            base.OnParticleSizeChanged();
+            SetupVertexBuffer();
+        }
+
+        protected internal override void OnEmitterUpdate()
+        {
+            base.OnEmitterUpdate();
+            UpdateBuffers();
+        }
+
+        protected internal override void Initialize()
+        {
+            Viewport viewPort = Game.GraphicsDevice.Viewport;
+
+            view = Matrix.CreateLookAt(new Vector3(0, 0, 0), Vector3.Forward, Vector3.Up);
+            projection = Matrix.CreateOrthographicOffCenter(0, viewPort.Width, viewPort.Height, 0, 0, -10);
+            projection = view * projection;
+
+            InitializeBuffers();
         }
 
         internal void UpdateBuffers()
         {
             // copy to instance buffer.
+            Emitter emitter = Emitter;
             fixed(Particle* arrPtr = emitter.Particles) {
                 Particle* tail = arrPtr + emitter.NumActive;
                 int i = 0;
@@ -60,14 +115,15 @@ namespace SE.Particles
             }
         }
 
-        public void Draw(Matrix cameraMatrix)
+        protected internal override void Draw(Matrix cameraMatrix)
         {
             // Setup various graphics device stuff.
             // TODO: See how SpriteBatch handles manually setting these!
-            gd.BlendState = BlendState.Additive;
-            gd.DepthStencilState = DepthStencilState.None;
-            gd.SamplerStates[0] = SamplerState.PointClamp;
-            gd.RasterizerState = RasterizerState.CullCounterClockwise;
+            Emitter emitter = Emitter;
+            Gd.BlendState = BlendState.Additive;
+            Gd.DepthStencilState = DepthStencilState.None;
+            Gd.SamplerStates[0] = SamplerState.PointClamp;
+            Gd.RasterizerState = RasterizerState.CullCounterClockwise;
 
             // Update parameters. May only need to be set when one of these values actually changes, not every frame.
             effect.CurrentTechnique = effect.Techniques["ParticleInstancing"];
@@ -76,27 +132,18 @@ namespace SE.Particles
             instanceBuffer.SetData(instanceData);
 
             // set buffer bindings to the device
-            gd.SetVertexBuffers(vertexBufferBinding, instanceBufferBinding);
-            gd.Indices = indexBuffer;
+            Gd.SetVertexBuffers(vertexBufferBinding, instanceBufferBinding);
+            Gd.Indices = indexBuffer;
 
             // Set the shader technique pass and then Draw
             effect.CurrentTechnique.Passes[0].Apply();
-            gd.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, 2, emitter.NumActive);
-        }
-
-        private void Initialize()
-        {
-            Viewport viewPort = game.GraphicsDevice.Viewport;
-
-            view = Matrix.CreateLookAt(new Vector3(0, 0, 0), Vector3.Forward, Vector3.Up);
-            projection = Matrix.CreateOrthographicOffCenter(0, viewPort.Width, viewPort.Height, 0, 0, -10);
-            projection = view * projection;
-
-            InitializeBuffers();
+            Gd.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, 2, emitter.NumActive);
         }
 
         internal void SetupVertexBuffer()
         {
+            Emitter emitter = Emitter;
+
             // Create a single quad origin is dead center of the quad it could be top left instead.
             Int2 particleSize = emitter.ParticleSize;
 
@@ -120,17 +167,18 @@ namespace SE.Particles
 
         private void InitializeBuffers()
         {
+            Emitter emitter = Emitter;
             int particlesLength = emitter.Particles.Length;
 
-            indexBuffer = new IndexBuffer(gd, typeof(int), 6, BufferUsage.WriteOnly);
-            vertexBuffer = new VertexBuffer(gd, VertexPositionTexture.VertexDeclaration, 4, BufferUsage.WriteOnly);
-            instanceBuffer = new VertexBuffer(gd, InstanceData.VertexDeclaration, particlesLength, BufferUsage.WriteOnly);
+            indexBuffer = new IndexBuffer(Gd, typeof(int), 6, BufferUsage.WriteOnly);
+            vertexBuffer = new VertexBuffer(Gd, VertexPositionTexture.VertexDeclaration, 4, BufferUsage.WriteOnly);
+            instanceBuffer = new VertexBuffer(Gd, InstanceData.VertexDeclaration, particlesLength, BufferUsage.WriteOnly);
 
             SetupVertexBuffer();
 
             // set up the indice stuff.
             int[] indices = new int[6];
-            if (gd.RasterizerState == RasterizerState.CullClockwise) {
+            if (Gd.RasterizerState == RasterizerState.CullClockwise) {
                 indices[0] = 0; indices[1] = 1; indices[2] = 2;
                 indices[3] = 2; indices[4] = 3; indices[5] = 0;
             } else {
@@ -154,7 +202,7 @@ namespace SE.Particles
             instanceBufferBinding = new VertexBufferBinding(instanceBuffer, 0, 1);
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             instanceBuffer?.Dispose();
             vertexBuffer?.Dispose();

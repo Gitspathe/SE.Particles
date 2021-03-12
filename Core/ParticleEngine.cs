@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using SE.Core.Extensions;
 using SE.Particles;
@@ -17,6 +18,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework;
 #endif
 
+[assembly: InternalsVisibleTo("SE.Particles.Native")]
 namespace SE.Core
 {
     public static class ParticleEngine
