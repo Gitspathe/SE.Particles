@@ -9,7 +9,6 @@ namespace SE.Particles.Modules
 {
     public unsafe class SaturationModule : ParticleModule
     {
-        private float[] rand;
         private float[] startSats;
         private float[] randEndSats;
 
@@ -61,20 +60,20 @@ namespace SE.Particles.Modules
             if (!IsRandom || Emitter == null) 
                 return;
 
-            rand = new float[Emitter.ParticlesLength];
             randEndSats = new float[Emitter.ParticlesLength];
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            for (int i = 0; i < particlesIndex.Length; i++) {
-                int index = particlesIndex[i];
-                startSats[index] = Emitter.Particles[index].Color.Y;
-                if (!IsRandom) 
-                    continue;
+            fixed (Particle* particleArr = Emitter.Particles) {
+                for (int i = 0; i < particlesIndex.Length; i++) {
+                    Particle* particle = &particleArr[particlesIndex[i]];
+                    startSats[particle->ID] = particle->Color.Y;
+                    if (!IsRandom)
+                        continue;
 
-                rand[particlesIndex[i]] = Random.Next(0.0f, 1.0f);
-                randEndSats[i] = Between(end1, end2, rand[i]);
+                    randEndSats[particle->ID] = Between(end1, end2, Random.Next(0.0f, 1.0f));
+                }
             }
         }
 
@@ -88,7 +87,7 @@ namespace SE.Particles.Modules
                     for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
                         particle->Color = new Vector4(
                             particle->Color.X, 
-                            ParticleMath.Lerp(startSats[i], end1, particle->TimeAlive / particle->InitialLife), 
+                            ParticleMath.Lerp(startSats[particle->ID], end1, particle->TimeAlive / particle->InitialLife), 
                             particle->Color.Z, 
                             particle->Color.W);
                     }
@@ -107,7 +106,7 @@ namespace SE.Particles.Modules
                     for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
                         particle->Color = new Vector4(
                             particle->Color.X,
-                            ParticleMath.Lerp(startSats[i], randEndSats[i], particle->TimeAlive / particle->InitialLife),
+                            ParticleMath.Lerp(startSats[particle->ID], randEndSats[particle->ID], particle->TimeAlive / particle->InitialLife),
                             particle->Color.Z,
                             particle->Color.W);
                     }

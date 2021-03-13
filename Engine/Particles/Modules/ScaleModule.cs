@@ -55,11 +55,14 @@ namespace SE.Particles.Modules
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            for (int i = 0; i < particlesIndex.Length; i++) {
-                int index = particlesIndex[i];
-                startScales[index] = Emitter.Particles[index].Scale;
-                if (IsRandom) {
-                    rand[index] = Random.Next(0.0f, 1.0f);
+            fixed (Particle* particleArr = Emitter.Particles) {
+                for (int i = 0; i < particlesIndex.Length; i++) {
+                    Particle* particle = &particleArr[particlesIndex[i]];
+                    startScales[particle->ID] = particle->Scale;
+                    if (!IsRandom)
+                        continue;
+
+                    rand[particle->ID] = Random.Next(0.0f, 1.0f);
                 }
             }
         }
@@ -67,31 +70,30 @@ namespace SE.Particles.Modules
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
             Particle* tail = arrayPtr + length;
-            int i = 0;
 
             switch (transitionType) {
                 case Transition.Lerp: {
-                    for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
+                    for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         float scale = Between(start, end, particle->TimeAlive / particle->InitialLife);
                         particle->Scale = AbsoluteValue
                             ? new Vector2(scale, scale)
-                            : new Vector2(scale, scale) * startScales[i];
+                            : new Vector2(scale, scale) * startScales[particle->ID];
                     }
                 } break;
                 case Transition.Curve: {
-                    for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
+                    for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         float scale = curve.Evaluate(particle->TimeAlive / particle->InitialLife);
                         particle->Scale = AbsoluteValue
                             ? new Vector2(scale, scale)
-                            : new Vector2(scale, scale) * startScales[i];
+                            : new Vector2(scale, scale) * startScales[particle->ID];
                     }
                 } break;
                 case Transition.RandomCurve: {
-                    for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
-                        float scale = curve.Evaluate(rand[i]);
+                    for (Particle* particle = arrayPtr; particle < tail; particle++) {
+                        float scale = curve.Evaluate(rand[particle->ID]);
                         particle->Scale = AbsoluteValue
                             ? new Vector2(scale, scale)
-                            : new Vector2(scale, scale) * startScales[i];
+                            : new Vector2(scale, scale) * startScales[particle->ID];
                     }
                 } break;
                 default:

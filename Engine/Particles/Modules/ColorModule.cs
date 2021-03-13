@@ -9,7 +9,6 @@ namespace SE.Particles.Modules
 {
     public unsafe class ColorModule : ParticleModule
     {
-        private Vector4[] rand;
         private Vector4[] startColors;
         private Vector4[] randEndColors;
 
@@ -73,41 +72,35 @@ namespace SE.Particles.Modules
             if (!IsRandom || Emitter == null) 
                 return;
 
-            rand = new Vector4[Emitter.ParticlesLength];
             randEndColors = new Vector4[Emitter.ParticlesLength];
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            // TODO: Stop being smooth brain and move all these (in all modules) into using new ID system.
-            for (int i = 0; i < particlesIndex.Length; i++) {
-                int index = particlesIndex[i];
-                startColors[index] = Emitter.Particles[index].Color;
-                if (!IsRandom) 
-                    continue;
+            fixed (Particle* particleArr = Emitter.Particles) {
+                for (int i = 0; i < particlesIndex.Length; i++) {
+                    Particle* particle = &particleArr[particlesIndex[i]];
+                    startColors[particle->ID] = particle->Color;
+                    if (!IsRandom)
+                        continue;
 
-                rand[particlesIndex[i]] = new Vector4(
-                    Random.Next(0.0f, 1.0f),
-                    Random.Next(0.0f, 1.0f),
-                    Random.Next(0.0f, 1.0f),
-                    Random.Next(0.0f, 1.0f));
-                randEndColors[i] = new Vector4(
-                    Between(end1.X, end2.X, rand[i].X),
-                    Between(end1.Y, end2.Y, rand[i].Y),
-                    Between(end1.Z, end2.Z, rand[i].Z),
-                    Between(end1.W, end2.W, rand[i].W));
+                    randEndColors[particle->ID] = new Vector4(
+                        Between(end1.X, end2.X, Random.Next(0.0f, 1.0f)),
+                        Between(end1.Y, end2.Y, Random.Next(0.0f, 1.0f)),
+                        Between(end1.Z, end2.Z, Random.Next(0.0f, 1.0f)),
+                        Between(end1.W, end2.W, Random.Next(0.0f, 1.0f)));
+                }
             }
         }
 
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
             Particle* tail = arrayPtr + length;
-            int i = 0;
 
             switch (transitionType) {
                 case Transition.Lerp: {
-                    for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
-                        particle->Color = Vector4.Lerp(startColors[i], end1, particle->TimeAlive / particle->InitialLife);
+                    for (Particle* particle = arrayPtr; particle < tail; particle++) {
+                        particle->Color = Vector4.Lerp(startColors[particle->ID], end1, particle->TimeAlive / particle->InitialLife);
                     }
                 } break;
                 case Transition.Curve: {
@@ -121,8 +114,8 @@ namespace SE.Particles.Modules
                     }
                 } break;
                 case Transition.RandomLerp: {
-                    for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
-                        particle->Color = Vector4.Lerp(startColors[i], randEndColors[i], particle->TimeAlive / particle->InitialLife);
+                    for (Particle* particle = arrayPtr; particle < tail; particle++) {
+                        particle->Color = Vector4.Lerp(startColors[particle->ID], randEndColors[particle->ID], particle->TimeAlive / particle->InitialLife);
                     }
                 } break;
                 default:

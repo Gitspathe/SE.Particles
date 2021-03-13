@@ -9,7 +9,6 @@ namespace SE.Particles.Modules
 {
     public unsafe class AlphaModule : ParticleModule
     {
-        private float[] rand;
         private float[] startAlphas;
         private float[] randEndAlphas;
 
@@ -62,20 +61,20 @@ namespace SE.Particles.Modules
             if (!IsRandom || Emitter == null) 
                 return;
 
-            rand = new float[Emitter.ParticlesLength];
             randEndAlphas = new float[Emitter.ParticlesLength];
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            for (int i = 0; i < particlesIndex.Length; i++) {
-                int index = particlesIndex[i];
-                startAlphas[index] = Emitter.Particles[index].Color.W;
-                if (!IsRandom) 
-                    continue;
+            fixed (Particle* particleArr = Emitter.Particles) {
+                for (int i = 0; i < particlesIndex.Length; i++) {
+                    Particle* particle = &particleArr[particlesIndex[i]];
+                    startAlphas[particle->ID] = particle->Color.W;
+                    if(!IsRandom)
+                        continue;
 
-                rand[particlesIndex[i]] = Random.Next(0.0f, 1.0f);
-                randEndAlphas[i] = Between(end1, end2, rand[i]);
+                    randEndAlphas[particle->ID] = Between(end1, end2, Random.Next(0.0f, 1.0f));
+                }
             }
         }
 
@@ -91,7 +90,7 @@ namespace SE.Particles.Modules
                             particle->Color.X, 
                             particle->Color.Y, 
                             particle->Color.Z, 
-                            ParticleMath.Lerp(startAlphas[i], end1, particle->TimeAlive / particle->InitialLife));
+                            ParticleMath.Lerp(startAlphas[particle->ID], end1, particle->TimeAlive / particle->InitialLife));
                     }
                 } break;
                 case Transition.Curve: {
@@ -110,7 +109,7 @@ namespace SE.Particles.Modules
                             particle->Color.X,
                             particle->Color.Y,
                             particle->Color.Z,
-                            ParticleMath.Lerp(startAlphas[i], randEndAlphas[i], particle->TimeAlive / particle->InitialLife));
+                            ParticleMath.Lerp(startAlphas[particle->ID], randEndAlphas[particle->ID], particle->TimeAlive / particle->InitialLife));
                     }
                 } break;
                 default:

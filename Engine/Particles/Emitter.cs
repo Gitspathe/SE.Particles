@@ -402,8 +402,7 @@ namespace SE.Particles
             particle->Position = new Vector2(float.MinValue, float.MinValue);
             NumActive--;
 
-            // DO NOT MODIFY!
-            // Careful operations here to preserve particle IDs.
+            // ->> CAUTION <<- Careful operations here to preserve particle IDs.
             if (index != NumActive) {
                 ref Particle a = ref Particles[index];
                 ref Particle b = ref Particles[NumActive];
@@ -411,8 +410,8 @@ namespace SE.Particles
                 int idB = b.ID;
 
                 Particles[index] = Particles[NumActive];
-                Particles[NumActive].ID = idA;
-                Particles[index].ID = idB;
+                b.ID = idA;
+                a.ID = idB;
             }
         }
 

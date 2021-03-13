@@ -47,16 +47,17 @@ namespace SE.Particles.Modules
                 return;
 
             rand = new float[Emitter.ParticlesLength];
-            for(int i = 0; i < rand.Length; i++) {
-                rand[i] = Random.Next(0.0f, 1.0f);
-            }
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            if (IsRandom) {
+            if (!IsRandom)
+                return;
+
+            fixed (Particle* particleArr = Emitter.Particles) {
                 for (int i = 0; i < particlesIndex.Length; i++) {
-                    rand[particlesIndex[i]] = Random.Next(0.0f, 1.0f);
+                    Particle* particle = &particleArr[particlesIndex[i]];
+                    rand[particle->ID] = Random.Next(0.0f, 1.0f);
                 }
             }
         }
@@ -83,9 +84,8 @@ namespace SE.Particles.Modules
                     }
                 } break;
                 case Transition.RandomCurve: {
-                    int i = 0;
-                    for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
-                        float velocity = curve.Evaluate(rand[i]);
+                    for (Particle* particle = arrayPtr; particle < tail; particle++) {
+                        float velocity = curve.Evaluate(rand[particle->ID]);
                         particle->Speed = AbsoluteValue 
                             ? velocity
                             : particle->Speed + (velocity * deltaTime);

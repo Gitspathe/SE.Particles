@@ -64,16 +64,17 @@ namespace SE.Particles.Modules
                 return;
 
             rand = new float[Emitter.ParticlesLength];
-            for (int i = 0; i < rand.Length; i++) {
-                rand[i] = Random.Next(0.0f, 1.0f);
-            }
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            if (IsRandom) {
+            if (!IsRandom)
+                return;
+
+            fixed (Particle* particleArr = Emitter.Particles) {
                 for (int i = 0; i < particlesIndex.Length; i++) {
-                    rand[particlesIndex[i]] = Random.Next(0.0f, 1.0f);
+                    Particle* particle = &particleArr[particlesIndex[i]];
+                    rand[particle->ID] = Random.Next(0.0f, 1.0f);
                 }
             }
         }
@@ -81,7 +82,6 @@ namespace SE.Particles.Modules
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
             Particle* tail = arrayPtr + length;
-            int i = 0;
 
             switch (transitionType) {
                 case TransitionType.Constant: {
@@ -105,13 +105,13 @@ namespace SE.Particles.Modules
                     }
                 } break;
                 case TransitionType.RandomConstant: {
-                    for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
-                        particle->SpriteRotation += Between(start, end, rand[i]) * deltaTime;
+                    for (Particle* particle = arrayPtr; particle < tail; particle++) {
+                        particle->SpriteRotation += Between(start, end, rand[particle->ID]) * deltaTime;
                     }
                 } break;
                 case TransitionType.RandomCurve: {
-                    for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
-                        particle->SpriteRotation += curve.Evaluate(rand[i]) * deltaTime;
+                    for (Particle* particle = arrayPtr; particle < tail; particle++) {
+                        particle->SpriteRotation += curve.Evaluate(rand[particle->ID]) * deltaTime;
                     }
                 } break;
                 default:

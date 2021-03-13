@@ -9,7 +9,6 @@ namespace SE.Particles.Modules
 {
     public unsafe class HueModule : ParticleModule
     {
-        private float[] rand;
         private float[] startHues;
         private float[] randEndHues;
 
@@ -61,20 +60,20 @@ namespace SE.Particles.Modules
             if (!IsRandom || Emitter == null) 
                 return;
 
-            rand = new float[Emitter.ParticlesLength];
             randEndHues = new float[Emitter.ParticlesLength];
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            for (int i = 0; i < particlesIndex.Length; i++) {
-                int index = particlesIndex[i];
-                startHues[index] = Emitter.Particles[index].Color.X;
-                if (!IsRandom) 
-                    continue;
+            fixed (Particle* particleArr = Emitter.Particles) {
+                for (int i = 0; i < particlesIndex.Length; i++) {
+                    Particle* particle = &particleArr[particlesIndex[i]];
+                    startHues[particle->ID] = particle->Color.X;
+                    if (!IsRandom)
+                        continue;
 
-                rand[particlesIndex[i]] = Random.Next(0.0f, 1.0f);
-                randEndHues[i] = Between(end1, end2, rand[i]);
+                    randEndHues[particle->ID] = Between(end1, end2, Random.Next(0.0f, 1.0f));
+                }
             }
         }
 
@@ -87,7 +86,7 @@ namespace SE.Particles.Modules
                 case Transition.Lerp: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
                         particle->Color = new Vector4(
-                            ParticleMath.Lerp(startHues[i], end1, particle->TimeAlive / particle->InitialLife), 
+                            ParticleMath.Lerp(startHues[particle->ID], end1, particle->TimeAlive / particle->InitialLife), 
                             particle->Color.Y, 
                             particle->Color.Z,
                             particle->Color.W);
@@ -106,7 +105,7 @@ namespace SE.Particles.Modules
                 case Transition.RandomLerp: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
                         particle->Color = new Vector4(
-                            ParticleMath.Lerp(startHues[i], randEndHues[i], particle->TimeAlive / particle->InitialLife),
+                            ParticleMath.Lerp(startHues[particle->ID], randEndHues[particle->ID], particle->TimeAlive / particle->InitialLife),
                             particle->Color.Y,
                             particle->Color.Z,
                             particle->Color.W);

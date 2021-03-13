@@ -9,7 +9,6 @@ namespace SE.Particles.Modules
 {
     public unsafe class LightnessModule : ParticleModule
     {
-        private float[] rand;
         private float[] startLits;
         private float[] randEndLits;
 
@@ -61,20 +60,20 @@ namespace SE.Particles.Modules
             if (!IsRandom || Emitter == null) 
                 return;
 
-            rand = new float[Emitter.ParticlesLength];
             randEndLits = new float[Emitter.ParticlesLength];
         }
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            for (int i = 0; i < particlesIndex.Length; i++) {
-                int index = particlesIndex[i];
-                startLits[index] = Emitter.Particles[index].Color.Z;
-                if (!IsRandom) 
-                    continue;
+            fixed (Particle* particleArr = Emitter.Particles) {
+                for (int i = 0; i < particlesIndex.Length; i++) {
+                    Particle* particle = &particleArr[particlesIndex[i]];
+                    startLits[particle->ID] = particle->Color.Z;
+                    if (!IsRandom)
+                        continue;
 
-                rand[particlesIndex[i]] = Random.Next(0.0f, 1.0f);
-                randEndLits[i] = Between(end1, end2, rand[i]);
+                    randEndLits[particle->ID] = Between(end1, end2, Random.Next(0.0f, 1.0f));
+                }
             }
         }
 
@@ -89,7 +88,7 @@ namespace SE.Particles.Modules
                         particle->Color = new Vector4(
                             particle->Color.X, 
                             particle->Color.Y, 
-                            ParticleMath.Lerp(startLits[i], end1, particle->TimeAlive / particle->InitialLife), 
+                            ParticleMath.Lerp(startLits[particle->ID], end1, particle->TimeAlive / particle->InitialLife), 
                             particle->Color.W);
                     }
                 } break;
@@ -108,7 +107,7 @@ namespace SE.Particles.Modules
                         particle->Color = new Vector4(
                             particle->Color.X,
                             particle->Color.Y,
-                            ParticleMath.Lerp(startLits[i], randEndLits[i], particle->TimeAlive / particle->InitialLife),
+                            ParticleMath.Lerp(startLits[particle->ID], randEndLits[particle->ID], particle->TimeAlive / particle->InitialLife),
                             particle->Color.W);
                     }
                 } break;
