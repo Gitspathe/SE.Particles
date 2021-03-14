@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Security;
+using SE.Core;
 using SE.Engine.Utility;
 using SE.Utility;
 using Random = SE.Utility.Random;
@@ -7,7 +10,8 @@ using static SE.Particles.ParticleMath;
 
 namespace SE.Particles.Modules
 {
-    public unsafe class LightnessModule : ParticleModule
+    [SuppressUnmanagedCodeSecurity]
+    public unsafe class LightnessModule : NativeParticleModule
     {
         private float[] startLits;
         private float[] randEndLits;
@@ -19,16 +23,25 @@ namespace SE.Particles.Modules
 
         private bool IsRandom => transitionType == Transition.RandomLerp;
 
+        public LightnessModule()
+        {
+            SubmodulePtr = nativeModule_LightnessModule_Ctor();
+        }
+
         public void SetLerp(float end)
         {
             end1 = end;
             transitionType = Transition.Lerp;
+
+            nativeModule_LightnessModule_SetLerp(SubmodulePtr, end);
         }
 
         public void SetCurve(Curve curve)
         {
             this.curve = curve;
             transitionType = Transition.Curve;
+
+            nativeModule_LightnessModule_SetCurve(SubmodulePtr, NativeUtil.CopyCurveToNativeCurve(curve));
         }
 
         public void SetRandomLerp(float min, float max)
@@ -39,6 +52,8 @@ namespace SE.Particles.Modules
             end1 = min;
             end2 = max;
             transitionType = Transition.RandomLerp;
+
+            nativeModule_LightnessModule_SetRandomLerp(SubmodulePtr, min, max);
         }
 
         public override ParticleModule DeepCopy() 
@@ -65,6 +80,10 @@ namespace SE.Particles.Modules
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
+            if (ParticleEngine.NativeEnabled) {
+                return;
+            }
+
             fixed (Particle* particleArr = Emitter.Particles) {
                 for (int i = 0; i < particlesIndex.Length; i++) {
                     Particle* particle = &particleArr[particlesIndex[i]];
@@ -79,6 +98,10 @@ namespace SE.Particles.Modules
 
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
+            if (ParticleEngine.NativeEnabled) {
+                return;
+            }
+
             Particle* tail = arrayPtr + length;
             int i = 0;
 
@@ -143,5 +166,25 @@ namespace SE.Particles.Modules
             Curve,
             RandomLerp
         }
+
+        protected override void OnModuleModeChanged()
+        {
+            //throw new NotImplementedException();
+        }
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern Submodule* nativeModule_LightnessModule_Ctor();
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void nativeModule_LightnessModule_SetNone(Submodule* modulePtr);
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void nativeModule_LightnessModule_SetLerp(Submodule* modulePtr, float end);
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void nativeModule_LightnessModule_SetRandomLerp(Submodule* modulePtr, float min, float max);
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void nativeModule_LightnessModule_SetCurve(Submodule* modulePtr, NativeCurve* curvePtr);
     }
 }

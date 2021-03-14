@@ -1,16 +1,26 @@
 ﻿using System;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Security;
+using SE.Core;
 using static SE.Particles.ParticleMath;
 using Vector4 = System.Numerics.Vector4;
 
 namespace SE.Particles.Modules
 {
-    public class TextureAnimationModule : ParticleModule
+    [SuppressUnmanagedCodeSecurity]
+    public unsafe class TextureAnimationModule : NativeParticleModule
     {
         public int SheetRows;
         public int SheetColumns;
         public float Speed;
 
-        private Mode loopMode;
+        private LoopMode loopMode;
+
+        public TextureAnimationModule()
+        {
+            SubmodulePtr = nativeModule_TextureAnimationModule_Ctor();
+        }
 
         private void ApplyToEmitter()
         {
@@ -27,6 +37,8 @@ namespace SE.Particles.Modules
             SheetRows = sheetRows;
             SheetColumns = sheetColumns;
             ApplyToEmitter();
+
+            nativeModule_TextureAnimationModule_SetOverLifetime(SubmodulePtr, sheetRows, sheetColumns);
         }
 
         public override void OnInitialize()
@@ -35,13 +47,18 @@ namespace SE.Particles.Modules
             ApplyToEmitter();
         }
 
-        public override unsafe void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
+        public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
+            if (ParticleEngine.NativeEnabled) {
+                nativeModule_TextureAnimationModule_SetTextureSize(SubmodulePtr, new NativeVector2(Emitter.TextureSize));
+                return;
+            }
+
             Particle* tail = arrayPtr + length;
             int totalFrames = SheetRows * SheetColumns;
             int frameSize = (int) Emitter.TextureSize.X / SheetRows;
             switch (loopMode) {
-                case Mode.Life: {
+                case LoopMode.Life: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         int frame = (int) Between(0.0f, totalFrames, particle->TimeAlive / particle->InitialLife);
 #if NETSTANDARD2_1
@@ -58,7 +75,7 @@ namespace SE.Particles.Modules
                              frameSize);
                     }
                 } break;
-                case Mode.Loop: {
+                case LoopMode.Loop: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         // TODO:
                     } 
@@ -84,10 +101,24 @@ namespace SE.Particles.Modules
             return mod;
         }
 
-        private enum Mode
+        private enum LoopMode
         {
             Life,
             Loop
         }
+
+        protected override void OnModuleModeChanged()
+        {
+            //throw new NotImplementedException();
+        }
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern Submodule* nativeModule_TextureAnimationModule_Ctor();
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void nativeModule_TextureAnimationModule_SetTextureSize(Submodule* modulePtr, NativeVector2 textureSize);
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void nativeModule_TextureAnimationModule_SetOverLifetime(Submodule* modulePtr, int sheetRows, int sheetColumns);
     }
 }

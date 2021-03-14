@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
 
 namespace SE.Particles.Modules
 {
@@ -45,5 +48,27 @@ namespace SE.Particles.Modules
         /// </summary>
         /// <returns>A deep copy.</returns>
         public abstract ParticleModule DeepCopy();
+    }
+
+    [SuppressUnmanagedCodeSecurity]
+    public abstract unsafe class NativeParticleModule : ParticleModule, IDisposable
+    {
+        public Submodule* SubmodulePtr { get; protected set; }
+
+        public void Dispose()
+        {
+            Emitter.NativeComponent.RemoveSubmodule(this);
+        }
+
+        /// <summary>
+        /// Called when the module's mode is changed.
+        /// </summary>
+        protected abstract void OnModuleModeChanged();
+    }
+
+    public enum ModuleMode
+    {
+        Managed,
+        Native
     }
 }

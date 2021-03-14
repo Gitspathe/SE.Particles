@@ -159,6 +159,7 @@ namespace SE.Particles
 #endif
 
         public ParticleRendererBase Renderer { get; private set; }
+        public NativeComponent NativeComponent { get; private set; }
 
         internal int ParticleEngineIndex = -1;
         internal float TimeToLive;
@@ -245,6 +246,8 @@ namespace SE.Particles
                 SetRenderer(new InstancedParticleRenderer());
             #endif
             }
+
+            NativeComponent = new NativeComponent(this);
         }
 
         public Emitter(int capacity = 2048, IEmitterShape shape = null) 
@@ -314,6 +317,9 @@ namespace SE.Particles
             for (int i = 0; i < modules.Count; i++) {
                 modulesArr[i].OnParticlesActivated(NewParticleIndexes);
             }
+            if (ParticleEngine.NativeEnabled) {
+                NativeComponent.OnParticlesActivated(NewParticleIndexes);
+            }
             numNew = 0;
 
             fixed (Particle* ptr = Particles) {
@@ -334,6 +340,9 @@ namespace SE.Particles
                         continue;
 
                     modulesArr[i].OnUpdate(deltaTime, ptr, NumActive);
+                }
+                if (ParticleEngine.NativeEnabled) {
+                    NativeComponent.OnUpdate(deltaTime, ptr, NumActive);
                 }
 
                 // Update the area modules influencing this emitter.
@@ -598,10 +607,15 @@ namespace SE.Particles
             lock (collectionLock) {
                 ParticleModule[] arr = modules.Array;
                 for (int i = modules.Count - 1; i >= 0; i--) {
-                    if (arr[i].GetType() == moduleType) {
-                        modules.RemoveAt(i);
-                        return true;
+                    if (arr[i].GetType() != moduleType) 
+                        continue;
+
+                    ParticleModule found = arr[i];
+                    if (found is IDisposable disposable) {
+                        disposable.Dispose();
                     }
+                    modules.RemoveAt(i);
+                    return true;
                 }
                 return false;
             }
@@ -650,6 +664,18 @@ namespace SE.Particles
             }
         }
 
+        public QuickList<ParticleModule> GetAllModules()
+        {
+            lock (collectionLock) {
+                QuickList<ParticleModule> tmpModules = new QuickList<ParticleModule>();
+                ParticleModule[] arr = modules.Array;
+                for (int i = 0; i < modules.Count; i++) {
+                    tmpModules.Add(arr[i]);
+                }
+                return tmpModules;
+            }
+        }
+
         public void AddModule(ParticleModule module)
         {
             if (module == null)
@@ -659,6 +685,10 @@ namespace SE.Particles
                 modules.Add(module);
                 module.Emitter = this;
                 module.OnInitialize();
+                if (module is NativeParticleModule nativeModule) {
+                    NativeComponent.AddSubmodule(nativeModule);
+                    NativeComponent.InitializeSubmodule(nativeModule, ParticlesLength);
+                }
             }
         }
 

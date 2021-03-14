@@ -45,6 +45,8 @@ namespace SE.Core
         private static bool useParticleRenderer = true;
     #endif
 
+        public static bool NativeEnabled = false;
+
         internal static bool UseArrayPool => AllocationMode == ParticleAllocationMode.ArrayPool;
 
         public static int ParticleCount { 
@@ -144,9 +146,14 @@ namespace SE.Core
                 throw new InvalidOperationException("Particle engine has not been initialized. Call ParticleEngine.Initialize() first.");
 
             WaitForThreads();
-
             DestroyPending(deltaTime);
             FindVisible(viewBounds);
+
+            // If visible emitters is zero, there's nothing to do.
+            if(visibleEmitters.Count == 0) {
+                return;
+            }
+
             switch (UpdateMode) {
                 case UpdateMode.ParallelAsynchronous: {
                     CreateTasks(deltaTime);
