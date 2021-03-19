@@ -23,9 +23,6 @@ namespace SE.Particles.Modules
 
         private bool IsRandom => transitionType == Transition.RandomLerp;
 
-        // TODO: Merge native modules and managed modules?? This could allow the user to seamlessly switch between the two,
-        // TODO: i.e: if the device doesn't support AVX/intrinsics, it could switch back to managed.
-
         protected AlphaModule()
         {
             SubmodulePtr = nativeModule_AlphaModule_Ctor();
