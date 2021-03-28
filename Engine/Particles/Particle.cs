@@ -11,8 +11,6 @@ namespace SE.Particles
         public Vector2 Position;
         public Vector2 Scale;
         public int ID;               // Used for identification (i.e random).
-
-        // TODO: Change from Vector2 to float? (Could fully update particle transform in shader.)
         public Vector2 Direction;    // Direction the particle travels in.
         public Vector4 Color;        // H, S, L, A.
         public float Mass;           // Used for repel and attract type functionality.

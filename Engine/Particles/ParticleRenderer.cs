@@ -36,15 +36,6 @@ namespace SE.Particles
         public abstract void Dispose();
     }
 
-#if MONOGAME
-    public abstract class MGParticleRenderer : ParticleRendererBase
-    {
-        protected internal abstract void Draw(Matrix cameraMatrix);
-
-        public override void Dispose() { }
-    }
-#endif
-
     public abstract class ParticleRenderer : ParticleRendererBase
     {
         protected internal abstract void Draw(Matrix4x4 cameraMatrix);
@@ -52,9 +43,14 @@ namespace SE.Particles
         public override void Dispose() { }
     }
 
-    // TODO: NativeInstancedParticleRenderer.
-
 #if MONOGAME
+    public abstract class MGParticleRenderer : ParticleRendererBase
+    {
+        protected internal abstract void Draw(Matrix cameraMatrix);
+
+        public override void Dispose() { }
+    }
+
     public unsafe class InstancedParticleRenderer : MGParticleRenderer
     {
         private VertexBuffer vertexBuffer;
@@ -98,19 +94,21 @@ namespace SE.Particles
 
         internal void UpdateBuffers()
         {
-            // copy to instance buffer.
             Emitter emitter = Emitter;
-            fixed(Particle* arrPtr = emitter.Particles) {
+            int i = 0;
+
+            // copy to instance buffer.
+            fixed (Particle* arrPtr = emitter.Particles) {
                 Particle* tail = arrPtr + emitter.NumActive;
-                int i = 0;
                 for (Particle* p = arrPtr; p < tail; p++, i++) {
-                    ref InstanceData data = ref instanceData[i];
                     Vector2 offset = new Vector2(p->SourceRectangle.X, p->SourceRectangle.Y);
-                    data.InstanceScale = p->Scale;
-                    data.InstanceRotation = p->SpriteRotation;
-                    data.TextureCoordOffset = offset / emitter.TextureSize;
-                    data.InstanceColor = new Color(p->Color.X / 360, p->Color.Y, p->Color.Z, p->Color.W);
-                    data.InstancePosition = new Vector3(p->Position.X, p->Position.Y, p->layerDepth);
+                    fixed (InstanceData* data = &instanceData[i]) {
+                        data->InstanceScale = p->Scale;
+                        data->InstanceRotation = p->SpriteRotation;
+                        data->TextureCoordOffset = offset / emitter.TextureSize;
+                        data->InstanceColor = new Color(p->Color.X / 360.0f, p->Color.Y, p->Color.Z, p->Color.W);
+                        data->InstancePosition = p->Position;
+                    }
                 }
             }
         }
@@ -157,10 +155,10 @@ namespace SE.Particles
             float top = -halfHeight; float bottom = halfHeight;
 
             VertexPositionTexture[] vertices = new VertexPositionTexture[4];
-            vertices[0] = new VertexPositionTexture { Position = new Vector3(left, top, 0f), TextureCoordinate = new Vector2(0f, 0f) };
-            vertices[1] = new VertexPositionTexture { Position = new Vector3(left, bottom, 0f), TextureCoordinate = new Vector2(0f, sizeFloat.Y) };
-            vertices[2] = new VertexPositionTexture { Position = new Vector3(right, bottom, 0f), TextureCoordinate = new Vector2(sizeFloat.X, sizeFloat.Y) };
-            vertices[3] = new VertexPositionTexture { Position = new Vector3(right, top, 0f), TextureCoordinate = new Vector2(sizeFloat.X, 0f) };
+            vertices[0] = new VertexPositionTexture { Position = new Vector2(left, top), TextureCoordinate = new Vector2(0f, 0f) };
+            vertices[1] = new VertexPositionTexture { Position = new Vector2(left, bottom), TextureCoordinate = new Vector2(0f, sizeFloat.Y) };
+            vertices[2] = new VertexPositionTexture { Position = new Vector2(right, bottom), TextureCoordinate = new Vector2(sizeFloat.X, sizeFloat.Y) };
+            vertices[3] = new VertexPositionTexture { Position = new Vector2(right, top), TextureCoordinate = new Vector2(sizeFloat.X, 0f) };
 
             vertexBuffer.SetData(vertices);
         }
@@ -190,7 +188,7 @@ namespace SE.Particles
             instanceData = ArrayPool<InstanceData>.Shared.Rent(particlesLength);
             for (int i = 0; i < particlesLength; i++) {
                 instanceData[i].InstanceColor = Color.White;
-                instanceData[i].InstancePosition = new Vector3(0, 0, 0);
+                instanceData[i].InstancePosition = new Vector2(0, 0);
             }
 
             // create buffers and set the data to them.
@@ -214,7 +212,7 @@ namespace SE.Particles
     [StructLayout(LayoutKind.Sequential)]
     public struct InstanceData : IVertexType
     {
-        public Vector3 InstancePosition;
+        public Vector2 InstancePosition;
         public Color InstanceColor;
         public Vector2 TextureCoordOffset;
         public Vector2 InstanceScale;
@@ -226,11 +224,11 @@ namespace SE.Particles
         static InstanceData()
         {
             var elements = new[] {
-                new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 1), // Note the 1 not a 0 used by the VertexPositionTexture UsageIndex.
-                new VertexElement(12, VertexElementFormat.Color, VertexElementUsage.Color, 1),
-                new VertexElement(16, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 1),
-                new VertexElement(24, VertexElementFormat.Vector2, VertexElementUsage.Position, 2),
-                new VertexElement(32, VertexElementFormat.Single, VertexElementUsage.Position, 3)
+                new VertexElement(0, VertexElementFormat.Vector2, VertexElementUsage.Position, 1),
+                new VertexElement(8, VertexElementFormat.Color, VertexElementUsage.Color, 1),
+                new VertexElement(12, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 1),
+                new VertexElement(20, VertexElementFormat.Vector2, VertexElementUsage.Position, 2),
+                new VertexElement(28, VertexElementFormat.Single, VertexElementUsage.Position, 3)
             };
             VertexDeclaration = new VertexDeclaration(elements);
         }
@@ -239,7 +237,7 @@ namespace SE.Particles
     [StructLayout(LayoutKind.Sequential)]
     public struct VertexPositionTexture : IVertexType
     {
-        public Vector3 Position;
+        public Vector2 Position;
         public Vector2 TextureCoordinate;
         public static readonly VertexDeclaration VertexDeclaration;
         VertexDeclaration IVertexType.VertexDeclaration => VertexDeclaration;
@@ -247,8 +245,8 @@ namespace SE.Particles
         static VertexPositionTexture()
         {
             var elements = new[] {
-                new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
-                new VertexElement(12, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 0)
+                new VertexElement(0, VertexElementFormat.Vector2, VertexElementUsage.Position, 0),
+                new VertexElement(8, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 0)
             };
             VertexDeclaration = new VertexDeclaration(elements);
         }

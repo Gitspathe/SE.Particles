@@ -32,7 +32,7 @@ namespace SE.Core
         internal static GraphicsDeviceManager GraphicsDeviceManager;
         internal static Effect ParticleInstanceEffect;
 
-        // TODO: Toggling this while running causes some weird shit.
+        // TODO: How will this work now that ParticleRenderer is a thing??
         public static bool UseParticleRenderer {
             get => useParticleRenderer;
             set {
@@ -61,8 +61,7 @@ namespace SE.Core
         }
 
         public static int EmitterCount {
-            get
-            {
+            get {
                 int total = 0;
                 foreach (Emitter emitter in emitters) {
                     if (emitter.Enabled)
@@ -126,19 +125,11 @@ namespace SE.Core
         }
         #endif
 
-        #if MONOGAME
         public static void Update(float deltaTime, Vector4 viewBounds)
         {
             tmpViewArr[0] = viewBounds;
             Update(deltaTime, tmpViewArr);
         }
-        #else
-        public static void Update(float deltaTime, Vector4 viewBounds)
-        {
-            tmpViewArr[0] = viewBounds;
-            Update(deltaTime, tmpViewArr);
-        }
-        #endif
 
         public static void Update(float deltaTime, Span<Vector4> viewBounds = default)
         {

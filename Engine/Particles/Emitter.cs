@@ -351,6 +351,7 @@ namespace SE.Particles
                 }
 
                 // Update particle positions.
+                // TODO: Do this in the shader?
                 tail = ptr + NumActive;
                 switch (Space) {
                     case Space.World: {
