@@ -8,5 +8,17 @@
       <Link>CompiledInstancingShaderDX.mgfx</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+	<None Include="$(MSBuildThisFileDirectory)\libSE.Native.dylib">
+      <Link>libSE.Native.dylib</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+	<None Include="$(MSBuildThisFileDirectory)\libSE.Native.so">
+      <Link>libSE.Native.so</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+	<None Include="$(MSBuildThisFileDirectory)\SE.Native.dll">
+      <Link>SE.Native.dll</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

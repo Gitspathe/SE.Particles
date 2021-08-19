@@ -12,7 +12,7 @@
     <RootNamespace>SE</RootNamespace>
     <PackageId>SE.Particles.MonoGame</PackageId>
     <AssemblyName>SE.Particles.MonoGame</AssemblyName>
-    <Version>0.0.1.9</Version>
+    <Version>0.0.2.0</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
@@ -63,6 +63,21 @@
       <PackagePath>build</PackagePath>
     </None>
     <None Include="CompiledInstancingShaderOpenGL.mgfx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>build</PackagePath>
+    </None>
+    <None Include="libSE.Native.dylib">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>build</PackagePath>
+    </None>
+    <None Include="libSE.Native.so">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>build</PackagePath>
+    </None>
+    <None Include="SE.Native.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Pack>true</Pack>
       <PackagePath>build</PackagePath>
