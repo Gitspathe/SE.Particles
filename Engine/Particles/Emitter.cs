@@ -203,6 +203,13 @@ namespace SE.Particles
         /// <summary>Enabled/Disabled state. Disabled emitters are not updated or registered to the particle engine.</summary>
         public bool Enabled { get; set; }
 
+        /// <summary>
+        /// Emitter constructor.
+        /// </summary>
+        /// <param name="boundsSize">Bounding box, used for culling. Ensure this is large enough to realistically encapsulate the particles.</param>
+        /// <param name="capacity">Number of particles allocated.</param>
+        /// <param name="shape">Emitter shape.</param>
+        /// <param name="renderer">Particle renderer used.</param>
         public Emitter(Vector2 boundsSize, int capacity = 2048, IEmitterShape shape = null, ParticleRendererBase renderer = null)
         {
             if (!ParticleEngine.Initialized)
@@ -250,9 +257,18 @@ namespace SE.Particles
             NativeComponent = new NativeComponent(this);
         }
 
+        /// <summary>
+        /// Emitter constructor.
+        /// </summary>
+        /// <param name="capacity">Number of particles allocated.</param>
+        /// <param name="shape">Emitter shape.</param>
         public Emitter(int capacity = 2048, IEmitterShape shape = null) 
             : this(new Vector2(512.0f, 512.0f), capacity, shape) { }
 
+        /// <summary>
+        /// Sets the particle renderer used.
+        /// </summary>
+        /// <param name="renderer">Particle renderer.</param>
         public void SetRenderer(ParticleRendererBase renderer)
         {
             Renderer?.Dispose();
@@ -260,6 +276,10 @@ namespace SE.Particles
             renderer.InitializeInternal(this);
         }
 
+        /// <summary>
+        /// Renders particle emitter.
+        /// </summary>
+        /// <param name="camMatrix">Camera view matrix.</param>
         public void Draw(Matrix4x4 camMatrix)
         {
             if (Renderer == null)
@@ -271,6 +291,10 @@ namespace SE.Particles
         }
 
     #if MONOGAME
+        /// <summary>
+        /// Renders particle emitter.
+        /// </summary>
+        /// <param name="camMatrix">Camera view matrix.</param>
         public void Draw(Matrix camMatrix)
         {
             if (Renderer == null)
@@ -282,6 +306,10 @@ namespace SE.Particles
         }
     #endif
 
+        /// <summary>
+        /// Gets a pointer to the particle array.
+        /// </summary>
+        /// <returns>Pointer to particle array.</returns>
         public Particle* GetParticlePointer()
         {
             fixed (Particle* ptr = Particles) {

@@ -11,6 +11,7 @@ using SE.Particles.Shapes;
 using SE.Utility;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
+using System.Reflection;
 
 #if MONOGAME
 using Microsoft.Xna.Framework.Graphics;
@@ -107,30 +108,61 @@ namespace SE.Core
         #if MONOGAME
         public static void Initialize(Game game, GraphicsDeviceManager gdm)
         {
-            Initialized = true;
+            if(gdm == null)
+                throw new ArgumentNullException(nameof(gdm));
+            if (game == null)
+                throw new ArgumentNullException(nameof(game));
+            if (gdm.GraphicsDevice == null)
+                throw new ParticleEngineInitializationException("GraphicsDevice is null.");
+
             Game = game;
             GraphicsDeviceManager = gdm;
 
-            // TODO: Load particle instancing effect. Need to improve / make flexible.
-            // TODO: Need to embed the instancing shader into the library. (https://jjagg.github.io/MonoGame-docfx/manual/tools/2mgfx.html)
-            if (gdm.GraphicsDevice != null) {
-                ParticleInstanceEffect = game.Content.Load<Effect>("InstancingShader");
-                ParticleInstanceEffect.CurrentTechnique = ParticleInstanceEffect.Techniques["ParticleInstancing"];
+            // Disgusting reflection to determine shader profile.
+            int val;
+            try {
+                Assembly mgAssembly = Assembly.GetAssembly(typeof(Game));
+                Type shaderType = mgAssembly.GetType("Microsoft.Xna.Framework.Graphics.Shader");
+                PropertyInfo profileProperty = shaderType.GetProperty("Profile");
+                val = (int)profileProperty.GetValue(null);
+            } catch (Exception) {
+                throw new ParticleEngineInitializationException("Unable to read shader profile. MonoGame assembly could be incompatible or missing.");
             }
+
+            // 0 = OpenGL, 1 = DirectX.
+            if(val == 0) {
+                ParticleInstanceEffect = new Effect(gdm.GraphicsDevice, File.ReadAllBytes("CompiledInstancingShaderOpenGL.mgfx"));
+            } else if(val == 1) {
+                ParticleInstanceEffect = new Effect(gdm.GraphicsDevice, File.ReadAllBytes("CompiledInstancingShaderDirectX.mgfx"));
+            } else {
+                throw new ParticleEngineInitializationException($"Unable to initialize particle engine. Unrecognized shader profile '{val}'");
+            }
+            ParticleInstanceEffect.CurrentTechnique = ParticleInstanceEffect.Techniques["ParticleInstancing"];
+            Initialized = true;
         }
-        #else
+    #else
         public static void Initialize()
         {
             Initialized = true;
         }
-        #endif
+    #endif
 
+        /// <summary>
+        /// Starts an update of the particle engine.
+        /// </summary>
+        /// <param name="deltaTime">Time passed since last update in seconds.</param>
+        /// <param name="viewBounds">Rectangle representing the 2D view port (X, Y, Width, Height).</param>
         public static void Update(float deltaTime, Vector4 viewBounds)
         {
             tmpViewArr[0] = viewBounds;
             Update(deltaTime, tmpViewArr);
         }
 
+        /// <summary>
+        /// Starts an update of the particle engine. Supports multiple view ports.
+        /// </summary>
+        /// <param name="deltaTime">Time passed since last update in seconds.</param>
+        /// <param name="viewBounds">Rectangles representing the 2D view ports (X, Y, Width, Height).</param>
         public static void Update(float deltaTime, Span<Vector4> viewBounds = default)
         {
             if (!Initialized)
@@ -213,6 +245,11 @@ namespace SE.Core
             }
         }
 
+        /// <summary>
+        /// Gets the list of emitters. 
+        /// This is not a safe copy - do not modify it directly!
+        /// </summary>
+        /// <returns>List of internal particle emitters.</returns>
         public static QuickList<Emitter> GetEmitters()
             => emitters;
 
@@ -274,6 +311,9 @@ namespace SE.Core
             }
         }
 
+        /// <summary>
+        /// Finalizes any update function currently in progress. This should be called before rendering.
+        /// </summary>
         public static void WaitForThreads()
         {
             if (!Initialized)
@@ -483,6 +523,20 @@ namespace SE.Core
         None = 0,
         Visible = 1,
         Enabled = 2,
+    }
+
+    public class ParticleEngineInitializationException : Exception
+    {
+        public ParticleEngineInitializationException(string message = null) : base(message) { }
+        public ParticleEngineInitializationException(string message, Exception innerException) : base(message, innerException) { }
+        public ParticleEngineInitializationException(Exception innerException) : base(null, innerException) { }
+    }
+
+    public class EmitterValueException : Exception
+    {
+        public EmitterValueException(string message = null) : base(message) { }
+        public EmitterValueException(string message, Exception innerException) : base(message, innerException) { }
+        public EmitterValueException(Exception innerException) : base(null, innerException) { }
     }
 
     /// <summary>
