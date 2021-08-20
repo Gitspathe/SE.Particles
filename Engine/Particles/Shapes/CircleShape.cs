@@ -29,7 +29,7 @@ namespace SE.Particles.Shapes
         }
         private float angleRatio;
 
-        public bool IsFullCircle { get; private set; }  = true;
+        public bool IsFullCircle { get; private set; } = true;
 
         public CircleShape(float radius = 32.0f, float angleRatio = 1.0f)
         {

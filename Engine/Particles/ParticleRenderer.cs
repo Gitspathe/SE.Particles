@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Numerics;
-using System.Threading.Tasks;
 using SE.Core;
 using Vector2 = System.Numerics.Vector2;
 using System.Runtime.InteropServices;
-using SE.Utility;
 using System.Buffers;
 
 #if MONOGAME
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MGVector2 = Microsoft.Xna.Framework.Vector2;
 using Vector3 = Microsoft.Xna.Framework.Vector3;
 #endif
 
@@ -105,7 +102,7 @@ namespace SE.Particles
                     fixed (InstanceData* data = &instanceData[i]) {
                         data->InstanceScale = p->Scale;
                         data->InstanceRotation = p->SpriteRotation;
-                        data->TextureCoordOffset = offset / emitter.TextureSize;
+                        data->TextureCoordOffset = offset / emitter.Config.Texture.FullTextureSize;
                         data->InstanceColor = new Color(p->Color.X / 360.0f, p->Color.Y, p->Color.Z, p->Color.W);
                         data->InstancePosition = p->Position;
                     }
@@ -115,9 +112,12 @@ namespace SE.Particles
 
         protected internal override void Draw(Matrix cameraMatrix)
         {
+            Emitter emitter = Emitter;
+            if (Emitter.NumActive == 0)
+                return;
+
             // Setup various graphics device stuff.
             // TODO: See how SpriteBatch handles manually setting these!
-            Emitter emitter = Emitter;
             Gd.BlendState = BlendState.Additive;
             Gd.DepthStencilState = DepthStencilState.None;
             Gd.SamplerStates[0] = SamplerState.PointClamp;
@@ -126,8 +126,8 @@ namespace SE.Particles
             // Update parameters. May only need to be set when one of these values actually changes, not every frame.
             effect.CurrentTechnique = effect.Techniques["ParticleInstancing"];
             effect.Parameters["World"].SetValue(cameraMatrix * projection);
-            effect.Parameters["ParticleTexture"].SetValue(emitter.Texture);
-            instanceBuffer.SetData(instanceData);
+            effect.Parameters["ParticleTexture"].SetValue(emitter.Config.Texture.Texture);
+            instanceBuffer.SetData(instanceData, 0, emitter.NumActive);
 
             // set buffer bindings to the device
             Gd.SetVertexBuffers(vertexBufferBinding, instanceBufferBinding);
@@ -143,11 +143,11 @@ namespace SE.Particles
             Emitter emitter = Emitter;
 
             // Create a single quad origin is dead center of the quad it could be top left instead.
-            Int2 particleSize = emitter.ParticleSize;
+            Int2 particleSize = new Int2((int)emitter.Config.Texture.Size.X, (int)emitter.Config.Texture.Size.Y);
 
             Vector2 sizeFloat = new Vector2(
-                emitter.ParticleSize.X / emitter.TextureSize.X,
-                emitter.ParticleSize.Y / emitter.TextureSize.Y);
+                emitter.Config.Texture.Size.X / emitter.Config.Texture.FullTextureSize.X,
+                emitter.Config.Texture.Size.Y / emitter.Config.Texture.FullTextureSize.Y);
 
             float halfWidth = particleSize.X / 2.0f;
             float halfHeight = particleSize.Y / 2.0f;
@@ -251,5 +251,7 @@ namespace SE.Particles
             VertexDeclaration = new VertexDeclaration(elements);
         }
     }
+
+    // TODO: SpriteBatchRenderer.
 }
 #endif

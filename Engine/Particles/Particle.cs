@@ -26,9 +26,9 @@ namespace SE.Particles
         public static Particle Default 
             => new Particle(0, Vector2.Zero, Vector2.One, Vector4.Zero, 0f, 1.0f);
 
-        public Particle(int ID, Vector2 position, Vector2 scale, Vector4 color, float spriteRotation, float timeAlive)
+        public Particle(int id, Vector2 position, Vector2 scale, Vector4 color, float spriteRotation, float timeAlive)
         {
-            this.ID = ID;
+            ID = id;
             Position = position;
             Scale = scale;
             Direction = Vector2.Zero;
@@ -81,7 +81,7 @@ namespace SE.Particles
 
         public bool Equals(Int2 other) 
             => X == other.X && Y == other.Y;
-        public override bool Equals(object obj) 
+        public override bool Equals(object obj)
             => obj is Int2 other && Equals(other);
         public override int GetHashCode() 
             => X ^ Y;

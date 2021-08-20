@@ -27,9 +27,9 @@ namespace SE.Particles.Modules
             if(Emitter == null)
                 return;
 
-            Emitter.ParticleSize = new Int2(
-                (int)Emitter.TextureSize.X / SheetColumns, 
-                (int)Emitter.TextureSize.Y / SheetRows);
+            //Emitter.ParticleSize = new Int2(
+            //    (int)Emitter.TextureSize.X / SheetColumns, 
+            //    (int)Emitter.TextureSize.Y / SheetRows);
         }
 
         public void SetOverLifetime(int sheetRows, int sheetColumns)
@@ -50,13 +50,13 @@ namespace SE.Particles.Modules
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
             if (ParticleEngine.NativeEnabled) {
-                nativeModule_TextureAnimationModule_SetTextureSize(SubmodulePtr, new NativeVector2(Emitter.TextureSize));
+                nativeModule_TextureAnimationModule_SetTextureSize(SubmodulePtr, new NativeVector2(Emitter.Config.Texture.FullTextureSize));
                 return;
             }
 
             Particle* tail = arrayPtr + length;
             int totalFrames = SheetRows * SheetColumns;
-            int frameSize = (int) Emitter.TextureSize.X / SheetRows;
+            int frameSize = (int) Emitter.Config.Texture.FullTextureSize.X / SheetRows;
             switch (loopMode) {
                 case LoopMode.Life: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {

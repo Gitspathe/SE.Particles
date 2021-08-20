@@ -103,7 +103,6 @@ namespace SE.Core
         private static Vector4[] tmpViewArr = new Vector4[1];
         private static QuickList<Emitter> pendingDestroy = new QuickList<Emitter>();
         private static Task updateTask;
-        private static bool temp = true;
 
         #if MONOGAME
         public static void Initialize(Game game, GraphicsDeviceManager gdm)
@@ -207,22 +206,6 @@ namespace SE.Core
                 } break;
                 default:
                     throw new ArgumentOutOfRangeException();
-            }
-
-            // TODO: Temp code. Remove when done.
-            if (temp) {
-                ForceModule mod = ForceModule.Attract(
-                    new CircleShape(1024.0f), 
-                    new Vector2(1024.0f, 1024.0f), 
-                    256.0f, 
-                    1024.0f);
-
-                //areaModules.Add(mod);
-
-                //AttractorModule mod2 = new AttractorModule(new CircleShape(512.0f), new System.Numerics.Vector2(2048.0f, 1024.0f));
-                //AreaModules.Add(mod2);
-
-                temp = false;
             }
         }
 

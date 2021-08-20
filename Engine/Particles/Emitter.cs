@@ -88,76 +88,6 @@ namespace SE.Particles
         }
         private Vector2 boundsSize;
 
-        public Vector2 TextureSize {
-            get => textureSize;
-            set {
-                try {
-                    if (value.X <= 0 || value.Y <= 0)
-                        throw new InvalidEmitterValueException($"{nameof(TextureSize)} must have values greater than zero.");
-
-                    textureSize = value;
-                } catch (Exception) {
-                    if (ParticleEngine.ErrorHandling == ErrorHandling.Throw) 
-                        throw;
-
-                    textureSize = new Vector2(
-                        Clamp(value.X, 1.0f, float.MaxValue), 
-                        Clamp(value.Y, 1.0f, float.MaxValue));
-                }
-            }
-        }
-        private Vector2 textureSize;
-
-        public Int2 ParticleSize {
-            get => particleSize;
-            set {
-                try {
-                    if (value.X <= 0 || value.Y <= 0)
-                        throw new InvalidEmitterValueException($"{nameof(TextureSize)} must have values greater than zero.");
-
-                    particleSize = value;
-                } catch (Exception) {
-                    if (ParticleEngine.ErrorHandling == ErrorHandling.Throw) 
-                        throw;
-
-                    particleSize = new Int2(64, 64);
-                }
-                Renderer?.OnParticleSizeChanged();
-            }
-        }
-        private Int2 particleSize = new Int2(64, 64);
-
-        public Int2 StartTextureOffset {
-            get => startTextureOffset;
-            set {
-                try {
-                    if (value.X <= 0 || value.Y <= 0)
-                        throw new InvalidEmitterValueException($"{nameof(startTextureOffset)} must have values greater than zero.");
-
-                    startTextureOffset = value;
-                } catch (Exception) {
-                    if (ParticleEngine.ErrorHandling == ErrorHandling.Throw) 
-                        throw;
-
-                    if (value.X < 0) value.X = 0;
-                    if (value.Y < 0) value.Y = 0;
-                    startTextureOffset = value;
-                }
-            }
-        }
-        private Int2 startTextureOffset;
-
-#if MONOGAME
-        public Texture2D Texture {
-            get => texture;
-            set {
-                texture = value ?? throw new InvalidEmitterValueException(new NullReferenceException());
-                TextureSize = new Vector2(texture.Width, texture.Height);
-            }
-        }
-        private Texture2D texture;
-#endif
-
         public ParticleRendererBase Renderer { get; private set; }
         public NativeComponent NativeComponent { get; private set; }
 
@@ -216,12 +146,10 @@ namespace SE.Particles
                 throw new InvalidOperationException("Particle engine has not been initialized. Call ParticleEngine.Initialize() first.");
 
             this.capacity = capacity;
-            Config = new EmitterConfig();
+            Config = new EmitterConfig(this);
             Shape = shape ?? new PointEmitterShape();
             BoundsSize = boundsSize;
             Position = Vector2.Zero;
-            TextureSize = new Vector2(128, 128); // Dummy value.
-            startTextureOffset = new Int2(0, 0); // Dummy value.
             switch (ParticleEngine.AllocationMode) {
                 case ParticleAllocationMode.ArrayPool:
                     Particles = ArrayPool<Particle>.Shared.Rent(capacity);
@@ -341,6 +269,9 @@ namespace SE.Particles
             // Update bounds.
             Bounds = new Vector4(Position.X - (BoundsSize.X / 2), Position.Y - (BoundsSize.Y / 2), BoundsSize.X, BoundsSize.Y);
 
+            // Emission.
+            UpdateEmission(deltaTime);
+
             // Inform the modules of newly activated particles.
             for (int i = 0; i < modules.Count; i++) {
                 modulesArr[i].OnParticlesActivated(NewParticleIndexes);
@@ -403,6 +334,47 @@ namespace SE.Particles
             lastPosition = Position;
         }
 
+        private void UpdateEmission(float deltaTime)
+        {
+            if (!Config.Emission.IsPlaying || Config.Emission.Duration < 0.00001f)
+                return;
+
+            Config.Emission.CurrentTime += deltaTime;
+            float norm = Config.Emission.CurrentTime / Config.Emission.Duration;
+            float toQueue;
+            if (norm >= 1.0f) {
+                norm = 1.0f;
+                if (Config.Emission.Loop) {
+                    Config.Emission.IsPlaying = true;
+                    Config.Emission.CurrentTime = 0.0f;
+                } else {
+                    Config.Emission.IsPlaying = false;
+                }
+            }
+
+            switch (Config.Emission.EmissionType) {
+                case EmitterConfig.EmissionType.None:
+                    toQueue = 0.0f;
+                    break;
+                case EmitterConfig.EmissionType.Constant:
+                    toQueue = Config.Emission.ConstantValue * deltaTime;
+                    break;
+                case EmitterConfig.EmissionType.Curve:
+                    toQueue = Config.Emission.CurveValue.Evaluate(norm) * deltaTime;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            Config.Emission.QueuedParticles += toQueue;
+            int i = (int)Config.Emission.QueuedParticles;
+            if (i <= 0)
+                return;
+
+            Emit(i);
+            Config.Emission.QueuedParticles -= i;
+        }
+
         internal void CheckParticleIntersections(QuickList<Particle> list, AreaModule areaModule)
         {
             Span<Particle> particles = ActiveParticles;
@@ -412,6 +384,17 @@ namespace SE.Particles
                     list.Add(particle);
                 }
             }
+        }
+
+        public void Play()
+        {
+            Config.Emission.IsPlaying = true;
+            Config.Emission.CurrentTime = 0.0f;
+        }
+
+        public void Stop()
+        {
+            Config.Emission.IsPlaying = false;
         }
 
         public void Clear()
@@ -480,7 +463,7 @@ namespace SE.Particles
                 Shape.Get((float)i / maxIteration, out particle->Position, out particle->Direction);
                 particle->Position += Position;
                 particle->TimeAlive = 0.0f;
-                particle->SourceRectangle = new Int4(startTextureOffset.X, startTextureOffset.Y, particleSize.X, particleSize.Y);
+                particle->SourceRectangle = new Int4(0, 0, (int)Config.Texture.Size.X, (int)Config.Texture.Size.Y);
 
                 // Set particle layer depth. Opaque must have proper draw order set.
                 particle->layerDepth = BlendMode == BlendMode.Opaque ? Random.Next() : 1.0f;
@@ -751,16 +734,19 @@ namespace SE.Particles
 
         public Emitter DeepCopy()
         {
-            Emitter emitter = new Emitter(capacity) {
-                Config = Config.DeepCopy(),
-                Position = Position
-            };
-            lock (collectionLock) {
-                for (int i = 0; i < modules.Count; i++) {
-                    emitter.AddModule(modules.Array[i].DeepCopy());
-                }
-            }
-            return emitter;
+            // TODO.
+
+            //Emitter emitter = new Emitter(capacity) {
+            //    Config = Config.DeepCopy(emitter),
+            //    Position = Position
+            //};
+            //lock (collectionLock) {
+            //    for (int i = 0; i < modules.Count; i++) {
+            //        emitter.AddModule(modules.Array[i].DeepCopy());
+            //    }
+            //}
+            //return emitter;
+            throw new NotImplementedException();
         }
 
         public void DisposeAfter(float? time = null)

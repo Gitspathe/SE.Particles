@@ -89,6 +89,7 @@ namespace SE.Particles.Modules
 
             Particle* tail = arrayPtr + length;
 
+            // TODO: Absolute value to sync up with native!
             switch (transitionType) {
                 case Transition.Lerp: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
