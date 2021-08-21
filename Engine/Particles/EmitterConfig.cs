@@ -38,9 +38,28 @@ namespace SE.Particles
         #endif
         }
 
+        internal void SetParent(Emitter newParent)
+        {
+            Parent = newParent;
+            Color.SetParent(newParent);
+            Scale.SetParent(newParent);
+            Life.SetParent(newParent);
+            Speed.SetParent(newParent);
+            Emission.SetParent(newParent);
+
+        #if MONOGAME
+            Texture.SetParent(newParent);
+        #endif
+        }
+
         public abstract class EmitterConfigCollection
         {
             protected Emitter Parent;
+
+            internal void SetParent(Emitter parent)
+            {
+                Parent = parent;
+            }
 
             internal EmitterConfigCollection(Emitter parent)
             {
@@ -79,8 +98,8 @@ namespace SE.Particles
                 StartValueType = StartingValue.RandomCurve;
             }
 
-            public ColorConfig DeepCopy(Emitter newParent)
-                => new ColorConfig(newParent) {
+            public ColorConfig DeepCopy()
+                => new ColorConfig(Parent) {
                     StartValueType = StartValueType,
                     Min = Min,
                     Max = Max,
@@ -145,8 +164,8 @@ namespace SE.Particles
                 StartValueType = StartingValue.RandomCurve;
             }
 
-            public ScaleConfig DeepCopy(Emitter newParent) 
-                => new ScaleConfig(newParent) {
+            public ScaleConfig DeepCopy() 
+                => new ScaleConfig(Parent) {
                     StartValueType = StartValueType,
                     Min = Min,
                     Max = Max,
@@ -193,8 +212,8 @@ namespace SE.Particles
                 maxLife = maxFound;
             }
 
-            public LifeConfig DeepCopy(Emitter newParent) 
-                => new LifeConfig(newParent) {
+            public LifeConfig DeepCopy() 
+                => new LifeConfig(Parent) {
                     StartValueType = StartValueType,
                     Min = Min,
                     Max = Max,
@@ -229,8 +248,8 @@ namespace SE.Particles
                 StartValueType = StartingValue.RandomCurve;
             }
 
-            public SpeedConfig DeepCopy(Emitter newParent) 
-                => new SpeedConfig(newParent) {
+            public SpeedConfig DeepCopy() 
+                => new SpeedConfig(Parent) {
                     StartValueType = StartValueType,
                     Min = Min,
                     Max = Max,
@@ -285,6 +304,14 @@ namespace SE.Particles
                 Size = new Vector2(FullTextureSize.X / columns, FullTextureSize.Y / rows);
                 Parent.Renderer?.OnParticleSizeChanged();
             }
+
+            public TextureConfig DeepCopy() => 
+                new TextureConfig(Parent) {
+                    StartingValue = StartingValue,
+                    Texture = Texture,
+                    Size = Size,
+                    FullTextureSize = FullTextureSize
+                };
         }
 #endif
 
@@ -333,6 +360,16 @@ namespace SE.Particles
                 EmissionType = EmissionType.Curve;
                 CurveValue = curve;
             }
+
+            public EmissionConfig DeepCopy() =>
+                new EmissionConfig(Parent) {
+                    Loop = Loop,
+                    Duration = Duration,
+                    EmissionType = EmissionType,
+                    QueuedParticles = 0,
+                    ConstantValue = ConstantValue,
+                    CurveValue = CurveValue.Clone()
+                };
         }
 
         internal enum EmissionType
@@ -356,12 +393,14 @@ namespace SE.Particles
             Sheet
         }
 
-        public EmitterConfig DeepCopy(Emitter newParent) 
-            => new EmitterConfig(newParent) {
-                Color = Color.DeepCopy(newParent),
-                Life = Life.DeepCopy(newParent),
-                Scale = Scale.DeepCopy(newParent),
-                Speed = Speed.DeepCopy(newParent),
+        public EmitterConfig DeepCopy() 
+            => new EmitterConfig(Parent) {
+                Color = Color.DeepCopy(),
+                Life = Life.DeepCopy(),
+                Scale = Scale.DeepCopy(),
+                Speed = Speed.DeepCopy(),
+                Texture = Texture.DeepCopy(),
+                Emission = Emission.DeepCopy()
             };
     }
 

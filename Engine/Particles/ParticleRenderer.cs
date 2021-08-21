@@ -168,14 +168,14 @@ namespace SE.Particles
             Emitter emitter = Emitter;
             int particlesLength = emitter.Particles.Length;
 
-            indexBuffer = new IndexBuffer(Gd, typeof(int), 6, BufferUsage.WriteOnly);
+            indexBuffer = new IndexBuffer(Gd, typeof(short), 6, BufferUsage.WriteOnly);
             vertexBuffer = new VertexBuffer(Gd, VertexPositionTexture.VertexDeclaration, 4, BufferUsage.WriteOnly);
             instanceBuffer = new VertexBuffer(Gd, InstanceData.VertexDeclaration, particlesLength, BufferUsage.WriteOnly);
 
             SetupVertexBuffer();
 
             // set up the indice stuff.
-            int[] indices = new int[6];
+            short[] indices = new short[6];
             if (Gd.RasterizerState == RasterizerState.CullClockwise) {
                 indices[0] = 0; indices[1] = 1; indices[2] = 2;
                 indices[3] = 2; indices[4] = 3; indices[5] = 0;

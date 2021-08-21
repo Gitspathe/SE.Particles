@@ -59,7 +59,7 @@ namespace SE.Particles
         
         public bool IsVisible { get; internal set; }
 
-        public bool ParallelEmission = true;
+        public bool ParallelEmission = false;
         public EmitterConfig Config;
 
         public Vector2 BoundsSize {
@@ -98,10 +98,10 @@ namespace SE.Particles
         
         private HashSet<AreaModule> areaModules = new HashSet<AreaModule>();
         private PooledList<ParticleModule> modules = new PooledList<ParticleModule>(ParticleEngine.UseArrayPool);
+        private Vector2 lastPosition;
         private int[] newParticles;
         private int numNew;
         private int capacity;
-        private Vector2 lastPosition;
         private bool isDisposed;
         private bool firstUpdate = true;
 
@@ -336,8 +336,12 @@ namespace SE.Particles
 
         private void UpdateEmission(float deltaTime)
         {
-            if (!Config.Emission.IsPlaying || Config.Emission.Duration < 0.00001f)
+            if (!Config.Emission.IsPlaying || Config.Emission.EmissionType == EmitterConfig.EmissionType.None || Config.Emission.Duration < 0.00001f)
                 return;
+
+            if (deltaTime > ParticleEngine.MaxEmissionTimeStep) {
+                deltaTime = ParticleEngine.MaxEmissionTimeStep;
+            }
 
             Config.Emission.CurrentTime += deltaTime;
             float norm = Config.Emission.CurrentTime / Config.Emission.Duration;
@@ -444,7 +448,7 @@ namespace SE.Particles
 
             bool shouldMultiThread = amount >= 2048 / Environment.ProcessorCount;
             if (shouldMultiThread && ParallelEmission) {
-                QuickParallel.For(0, amount, i => {
+                Parallel.For(0, amount, i => {
                     EmitParticle(i, amount);
                 });
             } else {
@@ -734,19 +738,18 @@ namespace SE.Particles
 
         public Emitter DeepCopy()
         {
-            // TODO.
+            Emitter emitter = new Emitter(capacity) {
+                Config = Config.DeepCopy(),
+                Position = Position
+            };
+            emitter.Config.SetParent(emitter);
 
-            //Emitter emitter = new Emitter(capacity) {
-            //    Config = Config.DeepCopy(emitter),
-            //    Position = Position
-            //};
-            //lock (collectionLock) {
-            //    for (int i = 0; i < modules.Count; i++) {
-            //        emitter.AddModule(modules.Array[i].DeepCopy());
-            //    }
-            //}
-            //return emitter;
-            throw new NotImplementedException();
+            lock (collectionLock) {
+                for (int i = 0; i < modules.Count; i++) {
+                    emitter.AddModule(modules.Array[i].DeepCopy());
+                }
+            }
+            return emitter;
         }
 
         public void DisposeAfter(float? time = null)

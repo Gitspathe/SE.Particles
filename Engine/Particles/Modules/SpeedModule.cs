@@ -10,7 +10,17 @@ namespace SE.Particles.Modules
     [SuppressUnmanagedCodeSecurity]
     public unsafe class SpeedModule : NativeParticleModule
     {
-        public bool AbsoluteValue = false;
+        public bool AbsoluteValue {
+            get => absoluteValue;
+            set {
+                if (value == absoluteValue)
+                    return;
+
+                absoluteValue = value;
+                nativeModule_SpeedModule_SetAbsoluteValue(SubmodulePtr, value);
+            }
+        }
+        private bool absoluteValue = false;
         
         private float[] rand;
 
@@ -88,8 +98,6 @@ namespace SE.Particles.Modules
             }
 
             Particle* tail = arrayPtr + length;
-
-            // TODO: Absolute value to sync up with native!
             switch (transitionType) {
                 case Transition.Lerp: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {

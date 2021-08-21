@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
@@ -12,7 +13,7 @@ using SE.Utility;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
 using System.Reflection;
-
+using System.Threading;
 #if MONOGAME
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Content;
@@ -96,15 +97,47 @@ namespace SE.Core
         }
         private static ErrorHandling errorHandling = ErrorHandling.Stability;
 
+        /// <summary>Maximum time delta the emission rate will be clamped to. Increases stability when the frame-rate is unstable.</summary>
+        public static float MaxEmissionTimeStep {
+            get => maxEmissionTimeStep;
+            set => maxEmissionTimeStep = ParticleMath.Clamp(value, 1.0f / 144.0f, 1.0f);
+        }
+        private static float maxEmissionTimeStep = 0.1f;
+
+        /// <summary>If true, the particle engine will use the CLR ThreadPool. If false, particle processing threads will be created.
+        ///          Generally 'false' will result in better performance. Try setting to true if performance is unstable.</summary>
+        public static bool UseThreadPool {
+            get => useThreadPool;
+            set {
+                if(useThreadPool == value)
+                    return;
+
+                if (updateTask != null && !updateTask.IsCompleted) {
+                    updateTask.Wait();
+                }
+
+                useThreadPool = value;
+                if (!useThreadPool && threads == null) {
+                    CreateThreads();
+                } else if (useThreadPool && threads != null) {
+                    EndThreads();
+                }
+            }
+        }
+        private static bool useThreadPool = false;
+
         /// <summary>Controls how the particle engine updates.</summary>
         public static UpdateMode UpdateMode = UpdateMode.ParallelAsynchronous;
+        
         public static bool Initialized { get; private set; }
 
         private static Vector4[] tmpViewArr = new Vector4[1];
         private static QuickList<Emitter> pendingDestroy = new QuickList<Emitter>();
         private static Task updateTask;
 
-        #if MONOGAME
+        private static QuickList<ParticleThread> threads;
+
+    #if MONOGAME
         public static void Initialize(Game game, GraphicsDeviceManager gdm)
         {
             if(gdm == null)
@@ -137,6 +170,11 @@ namespace SE.Core
                 throw new ParticleEngineInitializationException($"Unable to initialize particle engine. Unrecognized shader profile '{val}'");
             }
             ParticleInstanceEffect.CurrentTechnique = ParticleInstanceEffect.Techniques["ParticleInstancing"];
+
+            if (!UseThreadPool) {
+                CreateThreads();
+            }
+
             Initialized = true;
         }
     #else
@@ -228,6 +266,36 @@ namespace SE.Core
             }
         }
 
+        private static void EndThreads()
+        {
+            foreach (ParticleThread pt in threads) {
+                pt.End();
+            }
+            threads = null;
+        }
+
+        private static void CreateThreads()
+        {
+            threads = new QuickList<ParticleThread>();
+            int threadsNum = Math.Max(Environment.ProcessorCount - 1, 1);
+            for (int i = 0; i < threadsNum; i++) {
+                threads.Add(new ParticleThread());
+            }
+        }
+
+        private static Exception CheckForThreadException()
+        {
+            if(UseThreadPool)
+                return null;
+
+            foreach (ParticleThread pt in threads) {
+                if (pt.State == ParticleThread.ThreadState.Exception) {
+                    return pt.Exception;
+                }
+            }
+            return null;
+        }
+
         /// <summary>
         /// Gets the list of emitters. 
         /// This is not a safe copy - do not modify it directly!
@@ -259,8 +327,28 @@ namespace SE.Core
 
         private static void CreateTasks(float deltaTime)
         {
-            updateTask = Task.Factory.StartNew(() => {
-                QuickParallel.ForEach(areaModules, aMod => {
+            if (UseThreadPool) {
+                updateTask = Task.Factory.StartNew(() => {
+                    QuickParallel.ForEach(areaModules, aMod => {
+                        foreach (Emitter e in emitters) {
+                            if (aMod.Shape.Intersects(e.Bounds)) {
+                                e.AddAreaModule(aMod);
+                                aMod.AddEmitter(e);
+                            } else {
+                                e.RemoveAreaModule(aMod);
+                                aMod.RemoveEmitter(e);
+                            }
+                        }
+                    });
+                }).ContinueWith(t1 => {
+                    QuickParallel.ForEach(visibleEmitters, (emitters, count) => {
+                        for (int i = 0; i < count; i++) {
+                            emitters[i].Update(deltaTime);
+                        }
+                    });
+                });
+            } else {
+                foreach (AreaModule aMod in areaModules) {
                     foreach (Emitter e in emitters) {
                         if (aMod.Shape.Intersects(e.Bounds)) {
                             e.AddAreaModule(aMod);
@@ -270,15 +358,21 @@ namespace SE.Core
                             aMod.RemoveEmitter(e);
                         }
                     }
-                });
-            }).ContinueWith(t1 => {
-                // Update emitters.
-                QuickParallel.ForEach(visibleEmitters, (emitters, count) => {
-                    for (int i = 0; i < count; i++) {
-                        emitters[i].Update(deltaTime);
+                }
+
+                int amount = (int)Math.Floor((double)emitters.Count / threads.Count);
+                int curOffset = 0;
+                for (int i = 0; i < threads.Count; i++) {
+                    if (threads.Count == 1 || i == threads.Count - 1) {
+                        amount = emitters.Count - curOffset;
                     }
-                });
-            });
+
+                    Emitter[] array = ArrayPool<Emitter>.Shared.Rent(amount);
+                    Array.Copy(emitters.Array, curOffset, array, 0, amount);
+                    threads.Array[i].AssignWork(array, deltaTime, amount);
+                    curOffset += amount;
+                }
+            }
         }
 
 
@@ -302,8 +396,25 @@ namespace SE.Core
             if (!Initialized)
                 throw new InvalidOperationException("Particle engine has not been initialized. Call ParticleEngine.Initialize() first.");
 
-            if (updateTask != null && !updateTask.IsCompleted) {
-                updateTask.Wait();
+            if (UseThreadPool) {
+                if (updateTask != null && !updateTask.IsCompleted) {
+                    updateTask.Wait();
+                }
+            } else {
+                Exception e = CheckForThreadException();
+                if (e != null) {
+                    throw new Exception("An exception occured within a particle thread.", e);
+                }
+
+                int numFinished = 0;
+                while (true) {
+                    if (threads.Array[numFinished].State == ParticleThread.ThreadState.Idle) {
+                        numFinished++;
+                    }
+                    if (numFinished == threads.Count) {
+                        break;
+                    }
+                }
             }
         }
 
@@ -500,14 +611,6 @@ namespace SE.Core
             => Emitters.Remove(emitter);
     }
 
-    [Flags]
-    public enum SearchFlags
-    {
-        None = 0,
-        Visible = 1,
-        Enabled = 2,
-    }
-
     public class ParticleEngineInitializationException : Exception
     {
         public ParticleEngineInitializationException(string message = null) : base(message) { }
@@ -522,19 +625,102 @@ namespace SE.Core
         public EmitterValueException(Exception innerException) : base(null, innerException) { }
     }
 
+    internal class ParticleThread
+    {
+        public ThreadState State { get; private set; }
+        public Exception Exception { get; private set; }
+
+        private Thread thread;
+        private Emitter[] emitters;
+        private int length;
+        private float deltaTime;
+        private AutoResetEvent resetEvent = new AutoResetEvent(false);
+
+        // TODO: Error handling. Create a 'failed' ThreadState.
+
+        public ParticleThread()
+        {
+            thread = new Thread(Run);
+            thread.IsBackground = true;
+            thread.Name = "Particle Thread";
+            thread.Start();
+        }
+
+        public void AssignWork(Emitter[] emitters, float deltaTime, int length)
+        {
+            if (State != ThreadState.Idle) {
+                throw new Exception();
+            }
+
+            this.deltaTime = deltaTime;
+            this.emitters = emitters;
+            this.length = length;
+            State = ThreadState.Running;
+            resetEvent.Set();
+        }
+
+        public void End()
+        {
+            State = ThreadState.Terminated;
+            resetEvent.Set();
+        }
+
+        private void Run()
+        {
+            while (true) {
+                resetEvent.WaitOne();
+                if (State == ThreadState.Terminated || State == ThreadState.Exception)
+                    break;
+
+                try {
+                    State = ThreadState.Running;
+                    for (int i = 0; i < length; i++) {
+                        emitters[i].Update(deltaTime);
+                    }
+                } catch (Exception e) {
+                    State = ThreadState.Exception;
+                    Exception = e;
+                } finally {
+                    ArrayPool<Emitter>.Shared.Return(emitters);
+                }
+
+                if(State == ThreadState.Exception)
+                    break;
+
+                State = ThreadState.Idle;
+                resetEvent.Reset();
+            }
+        }
+
+        public enum ThreadState
+        {
+            Idle,
+            Running,
+            Exception,
+            Terminated
+        }
+    }
+
+    [Flags]
+    public enum SearchFlags
+    {
+        None = 0,
+        Visible = 1,
+        Enabled = 2,
+    }
+
     /// <summary>
     /// Controls how particles are allocated for new emitters.
     /// </summary>
     public enum ParticleAllocationMode
     {
-        /// <summary>Particles are allocated using standard arrays. Most useful when fewer emitters are created and destroyed at runtime,
-        ///          such as when particle emitters are pooled.</summary>
+        /// <summary>Particles are allocated using standard arrays. This should only be used if ParticleAllocationMode.ArrayPool causes
+        ///          unintended behaviour.</summary>
         Array,
 
-        /// <summary>Particles are allocated using arrays, which are rented and returned to the shared array pool.
+        /// <summary>Particles are allocated using the shared array pool.
         ///          This option will result in less garbage generation, and faster instantiation of new particle emitters.
-        ///          Most useful when creating and destroying many particle emitters at runtime.
-        ///          However, this option may result in a buildup of memory usage due to how ArrayPool.Shared internally works.</summary>
+        ///          Most useful when creating and destroying many particle emitters at runtime.</summary>
         ArrayPool
     }
 
@@ -552,7 +738,7 @@ namespace SE.Core
         ///          State is synchronized immediately after Update() has finished processing.</summary>
         ParallelSynchronous,
 
-        /// <summary>Update is done synchronously on whatever thread Update() was called from. Results in lower performance on machines with
+        /// <summary>Update is done synchronously on a single thread. Results in lower performance on machines with
         ///          >2 cores, and potentially better performance on machines with 1-2 cores.</summary>
         Synchronous
     }
@@ -563,7 +749,7 @@ namespace SE.Core
     public enum ErrorHandling
     {
         /// <summary>The Engine will prioritize stability, and will attempt to correct certain exceptions. Exceptions related to emitter
-        ///          values, such as invalid bounds, sizes, etc, will not be thrown. Exceptions that can't be corrected will still be thrown.</summary>
+        ///          values, such as invalid bounds, will not be thrown. Exceptions that can't be corrected will still be thrown.</summary>
         Stability,
 
         /// <summary>Exceptions will be thrown whenever values are invalid. This is useful for debugging and fine-tuning particle emitters.</summary>
