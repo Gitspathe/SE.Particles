@@ -8,18 +8,18 @@ namespace SE.Particles
     [StructLayout(LayoutKind.Sequential)]
     public struct Particle
     {
-        public Vector2 Position;
-        public Vector2 Scale;
+        public Vector2 Position;     // X, Y position.
+        public Vector2 Scale;        // X, Y scale.
         public int ID;               // Used for identification (i.e random).
         public Vector2 Direction;    // Direction the particle travels in.
         public Vector4 Color;        // H, S, L, A.
         public float Mass;           // Used for repel and attract type functionality.
-        public float Speed;
+        public float Speed;          // Speed. Combined with Direction to get the velocity.
         public float SpriteRotation; // Sprite rotation.
-        public float InitialLife;
-        public float TimeAlive;
+        public float InitialLife;    // Activated life.
+        public float TimeAlive;      // Time active.
         public float layerDepth;     // Draw order.
-        public Int4 SourceRectangle;
+        public Int4 SourceRectangle; // Texture source rectangle.
 
         public static readonly int SizeInBytes = Marshal.SizeOf(typeof(Particle));
 

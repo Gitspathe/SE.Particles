@@ -2,23 +2,22 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using SE.Core.Extensions;
+using SE.Core.Exceptions;
 using SE.Particles;
 using SE.Particles.AreaModules;
-using SE.Particles.Shapes;
 using SE.Utility;
-using Vector2 = System.Numerics.Vector2;
-using Vector4 = System.Numerics.Vector4;
 using System.Reflection;
 using System.Threading;
 #if MONOGAME
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework;
 #endif
+
+using Vector2 = System.Numerics.Vector2;
+using Vector4 = System.Numerics.Vector4;
 
 [assembly: InternalsVisibleTo("SE.Particles.Native")]
 namespace SE.Core
@@ -30,15 +29,14 @@ namespace SE.Core
         private static readonly QuickList<AreaModule> areaModules = new QuickList<AreaModule>();
     
     #if MONOGAME
-        internal static Game Game;
-        internal static GraphicsDeviceManager GraphicsDeviceManager;
+        internal static GraphicsDevice GraphicsDevice;
         internal static Effect ParticleInstanceEffect;
 
         // TODO: How will this work now that ParticleRenderer is a thing??
         public static bool UseParticleRenderer {
             get => useParticleRenderer;
             set {
-                if(GraphicsDeviceManager?.GraphicsDevice == null || useParticleRenderer == value)
+                if(GraphicsDevice == null || useParticleRenderer == value)
                     return;
 
                 useParticleRenderer = value;
@@ -138,17 +136,12 @@ namespace SE.Core
         private static QuickList<ParticleThread> threads;
 
     #if MONOGAME
-        public static void Initialize(Game game, GraphicsDeviceManager gdm)
+        public static void Initialize(GraphicsDevice graphicsDevice)
         {
-            if(gdm == null)
-                throw new ArgumentNullException(nameof(gdm));
-            if (game == null)
-                throw new ArgumentNullException(nameof(game));
-            if (gdm.GraphicsDevice == null)
-                throw new ParticleEngineInitializationException("GraphicsDevice is null.");
+            if(graphicsDevice == null)
+                throw new ArgumentNullException(nameof(graphicsDevice));
 
-            Game = game;
-            GraphicsDeviceManager = gdm;
+            GraphicsDevice = graphicsDevice;
 
             // Disgusting reflection to determine shader profile.
             int val;
@@ -163,9 +156,9 @@ namespace SE.Core
 
             // 0 = OpenGL, 1 = DirectX.
             if(val == 0) {
-                ParticleInstanceEffect = new Effect(gdm.GraphicsDevice, File.ReadAllBytes("CompiledInstancingShaderOpenGL.mgfx"));
+                ParticleInstanceEffect = new Effect(graphicsDevice, File.ReadAllBytes("CompiledInstancingShaderOpenGL.mgfx"));
             } else if(val == 1) {
-                ParticleInstanceEffect = new Effect(gdm.GraphicsDevice, File.ReadAllBytes("CompiledInstancingShaderDirectX.mgfx"));
+                ParticleInstanceEffect = new Effect(graphicsDevice, File.ReadAllBytes("CompiledInstancingShaderDirectX.mgfx"));
             } else {
                 throw new ParticleEngineInitializationException($"Unable to initialize particle engine. Unrecognized shader profile '{val}'");
             }
@@ -360,17 +353,25 @@ namespace SE.Core
                     }
                 }
 
-                int amount = (int)Math.Floor((double)emitters.Count / threads.Count);
-                int curOffset = 0;
-                for (int i = 0; i < threads.Count; i++) {
-                    if (threads.Count == 1 || i == threads.Count - 1) {
-                        amount = emitters.Count - curOffset;
-                    }
+                // TODO: A better thread allocation method. Implement complexity values / load balancing.
+                // TODO: ALSO moving the game window, while the fps is high, causes the particle engine to deadlock. wtf.
+                
+                foreach (ParticleThread pt in threads) {
+                    pt.NewFrame(deltaTime);
+                }
 
-                    Emitter[] array = ArrayPool<Emitter>.Shared.Rent(amount);
-                    Array.Copy(emitters.Array, curOffset, array, 0, amount);
-                    threads.Array[i].AssignWork(array, deltaTime, amount);
-                    curOffset += amount;
+                int curThread = 0;
+                foreach (Emitter e in emitters) {
+                    threads.Array[curThread].AssignWork(e);
+
+                    curThread++;
+                    if(curThread == threads.Count) {
+                        curThread = 0;
+                    }
+                }
+
+                foreach (ParticleThread pt in threads) {
+                    pt.Start();
                 }
             }
         }
@@ -611,32 +612,15 @@ namespace SE.Core
             => Emitters.Remove(emitter);
     }
 
-    public class ParticleEngineInitializationException : Exception
-    {
-        public ParticleEngineInitializationException(string message = null) : base(message) { }
-        public ParticleEngineInitializationException(string message, Exception innerException) : base(message, innerException) { }
-        public ParticleEngineInitializationException(Exception innerException) : base(null, innerException) { }
-    }
-
-    public class EmitterValueException : Exception
-    {
-        public EmitterValueException(string message = null) : base(message) { }
-        public EmitterValueException(string message, Exception innerException) : base(message, innerException) { }
-        public EmitterValueException(Exception innerException) : base(null, innerException) { }
-    }
-
     internal class ParticleThread
     {
         public ThreadState State { get; private set; }
         public Exception Exception { get; private set; }
 
         private Thread thread;
-        private Emitter[] emitters;
-        private int length;
-        private float deltaTime;
         private AutoResetEvent resetEvent = new AutoResetEvent(false);
-
-        // TODO: Error handling. Create a 'failed' ThreadState.
+        private QuickList<Emitter> emitters = new QuickList<Emitter>();
+        private float deltaTime;
 
         public ParticleThread()
         {
@@ -646,17 +630,31 @@ namespace SE.Core
             thread.Start();
         }
 
-        public void AssignWork(Emitter[] emitters, float deltaTime, int length)
+        public void Start()
+        {
+            if (emitters.Count > 0) {
+                State = ThreadState.Running;
+                resetEvent.Set();
+            }
+        }
+
+        public void NewFrame(float deltaTime)
         {
             if (State != ThreadState.Idle) {
-                throw new Exception();
+                throw new Exception("Particle thread isn't idle.");
             }
 
             this.deltaTime = deltaTime;
-            this.emitters = emitters;
-            this.length = length;
-            State = ThreadState.Running;
-            resetEvent.Set();
+            emitters.Clear();
+        }
+
+        public void AssignWork(Emitter emitter)
+        {
+            if (State != ThreadState.Idle) {
+                throw new Exception("Particle thread isn't idle.");
+            }
+
+            emitters.Add(emitter);
         }
 
         public void End()
@@ -674,14 +672,12 @@ namespace SE.Core
 
                 try {
                     State = ThreadState.Running;
-                    for (int i = 0; i < length; i++) {
-                        emitters[i].Update(deltaTime);
+                    for (int i = 0; i < emitters.Count; i++) {
+                        emitters.Array[i].Update(deltaTime);
                     }
                 } catch (Exception e) {
                     State = ThreadState.Exception;
                     Exception = e;
-                } finally {
-                    ArrayPool<Emitter>.Shared.Return(emitters);
                 }
 
                 if(State == ThreadState.Exception)

@@ -16,9 +16,7 @@ namespace SE.Particles
     public abstract class ParticleRendererBase : IDisposable
     {
         protected internal Emitter Emitter { get; internal set; }
-        protected Game Game { get; } = ParticleEngine.Game;
-        protected GraphicsDeviceManager Gdm { get; } = ParticleEngine.GraphicsDeviceManager;
-        protected GraphicsDevice Gd { get; } = ParticleEngine.Game.GraphicsDevice;
+        protected GraphicsDevice Graphics { get; } = ParticleEngine.GraphicsDevice;
 
         internal void InitializeInternal(Emitter emitter)
         {
@@ -80,7 +78,7 @@ namespace SE.Particles
 
         protected internal override void Initialize()
         {
-            Viewport viewPort = Game.GraphicsDevice.Viewport;
+            Viewport viewPort = Graphics.Viewport;
 
             view = Matrix.CreateLookAt(new Vector3(0, 0, 0), Vector3.Forward, Vector3.Up);
             projection = Matrix.CreateOrthographicOffCenter(0, viewPort.Width, viewPort.Height, 0, 0, -10);
@@ -118,10 +116,10 @@ namespace SE.Particles
 
             // Setup various graphics device stuff.
             // TODO: See how SpriteBatch handles manually setting these!
-            Gd.BlendState = BlendState.Additive;
-            Gd.DepthStencilState = DepthStencilState.None;
-            Gd.SamplerStates[0] = SamplerState.PointClamp;
-            Gd.RasterizerState = RasterizerState.CullCounterClockwise;
+            Graphics.BlendState = BlendState.Additive;
+            Graphics.DepthStencilState = DepthStencilState.None;
+            Graphics.SamplerStates[0] = SamplerState.PointClamp;
+            Graphics.RasterizerState = RasterizerState.CullCounterClockwise;
 
             // Update parameters. May only need to be set when one of these values actually changes, not every frame.
             effect.CurrentTechnique = effect.Techniques["ParticleInstancing"];
@@ -130,12 +128,12 @@ namespace SE.Particles
             instanceBuffer.SetData(instanceData, 0, emitter.NumActive);
 
             // set buffer bindings to the device
-            Gd.SetVertexBuffers(vertexBufferBinding, instanceBufferBinding);
-            Gd.Indices = indexBuffer;
+            Graphics.SetVertexBuffers(vertexBufferBinding, instanceBufferBinding);
+            Graphics.Indices = indexBuffer;
 
             // Set the shader technique pass and then Draw
             effect.CurrentTechnique.Passes[0].Apply();
-            Gd.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, 2, emitter.NumActive);
+            Graphics.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, 2, emitter.NumActive);
         }
 
         internal void SetupVertexBuffer()
@@ -168,15 +166,15 @@ namespace SE.Particles
             Emitter emitter = Emitter;
             int particlesLength = emitter.Particles.Length;
 
-            indexBuffer = new IndexBuffer(Gd, typeof(short), 6, BufferUsage.WriteOnly);
-            vertexBuffer = new VertexBuffer(Gd, VertexPositionTexture.VertexDeclaration, 4, BufferUsage.WriteOnly);
-            instanceBuffer = new VertexBuffer(Gd, InstanceData.VertexDeclaration, particlesLength, BufferUsage.WriteOnly);
+            indexBuffer = new IndexBuffer(Graphics, typeof(short), 6, BufferUsage.WriteOnly);
+            vertexBuffer = new VertexBuffer(Graphics, VertexPositionTexture.VertexDeclaration, 4, BufferUsage.WriteOnly);
+            instanceBuffer = new VertexBuffer(Graphics, InstanceData.VertexDeclaration, particlesLength, BufferUsage.WriteOnly);
 
             SetupVertexBuffer();
 
             // set up the indice stuff.
             short[] indices = new short[6];
-            if (Gd.RasterizerState == RasterizerState.CullClockwise) {
+            if (Graphics.RasterizerState == RasterizerState.CullClockwise) {
                 indices[0] = 0; indices[1] = 1; indices[2] = 2;
                 indices[3] = 2; indices[4] = 3; indices[5] = 0;
             } else {

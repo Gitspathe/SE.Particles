@@ -1,4 +1,3 @@
-// the shader model well use for dx or gl
 #if OPENGL
 #define SV_POSITION POSITION
 #define VS_SHADERMODEL vs_3_0
@@ -8,32 +7,11 @@
 #define PS_SHADERMODEL ps_4_0
 #endif
 
-
-
-//______________________________________
-// shader constants.
-//______________________________________
-
-
 //static const float PI = 3.14159;
 //static const float PI2 = 6.28318;
 //static const float EIGHT_PI = 25.13274;
 
-
-
-//______________________________________
-// shader variables.
-// we set these up in game1.
-//______________________________________
-
 matrix World;
-
-//______________________________________
-// the shader textures and samplers.
-// we set the texture to use thru game1
-//______________________________________
-
-
 Texture2D ParticleTexture;
 sampler2D TexSampler = sampler_state
 {
@@ -41,16 +19,13 @@ sampler2D TexSampler = sampler_state
 	//AddressU = Wrap;//AddressV = Wrap;//MinFilter = Anisotropic;//MagFilter = Anisotropic;//MipFilter = Point;
 };
 
-
-//______________________________________
-// the shader structs well be defining.
-// these match the vertex definitions in game1.
-//______________________________________
-
+// ------------------------------------------------------------------------
+//                 INPUTS
+// ------------------------------------------------------------------------
 
 struct VSInstanceInputSimple
 {
-    float3 InstancePosition : POSITION1; // the number used must match the vertex declaration.
+    float3 InstancePosition : POSITION1;
     float4 InstanceColor : COLOR1;
     float2 TexCoordOffset : TEXCOORD1;
 	float2 InstanceScale : POSITION2;
@@ -71,12 +46,12 @@ struct VSOutputSimple
 };
 
 
+// ------------------------------------------------------------------------
+//                FUNCTIONS
+// ------------------------------------------------------------------------
 
 
-//______________________________________
-// the vertex shaders.
-//______________________________________
-
+// Matrix scale function.
 float4x4 m_scale(float4x4 m, float2 v)
 {
     float x = v.x, y = v.y;
@@ -89,12 +64,19 @@ float4x4 m_scale(float4x4 m, float2 v)
     return m;
 }
 
+//HSLA -> RGBA conversion.
 float4 hsl2rgb(float4 c)
 {
     float3 rgb = clamp( abs(fmod(c.x*6.0+float3(0.0,4.0,2.0),6.0)-3.0)-1.0, 0.0, 1.0);
     float3 thing = c.z + c.y * (rgb-0.5)*(1.0-abs(2.0*c.z-1.0));
     return float4(thing, c.w);
 }
+
+
+// ------------------------------------------------------------------------
+//                SHADERS
+// ------------------------------------------------------------------------
+
 
 VSOutputSimple VertexShader01(in VSVertexInputSimple vertexInput, VSInstanceInputSimple instanceInput)
 {
@@ -124,25 +106,11 @@ VSOutputSimple VertexShader01(in VSVertexInputSimple vertexInput, VSInstanceInpu
     return output;
 }
 
-
-
-//______________________________________
-// the pixel shaders.
-//______________________________________
-
-
+// Pixel shader.
 float4 PixelShader01(VSOutputSimple input) : COLOR0
 {
     return tex2D(TexSampler, input.TexCoord) * hsl2rgb(input.IdColor);
 }
-
-
-
-//______________________________________
-// the techniques.
-// we set this from game1.
-//______________________________________
-
 
 technique ParticleInstancing
 {

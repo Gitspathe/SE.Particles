@@ -3,7 +3,7 @@ using SE.Engine.Utility;
 using SE.Utility;
 using System;
 using SE.Core;
-
+using SE.Core.Exceptions;
 #if MONOGAME
 using Microsoft.Xna.Framework.Graphics;
 #endif

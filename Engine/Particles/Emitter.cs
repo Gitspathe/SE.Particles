@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using SE.Core;
+using SE.Core.Exceptions;
 using SE.Particles.AreaModules;
 using SE.Particles.Modules;
 using SE.Particles.Shapes;
@@ -30,6 +31,23 @@ namespace SE.Particles
         public IAdditionalData AdditionalData;
         public IEmitterShape Shape;
         public Space Space;
+        public EmitterConfig Config;
+
+        internal int ParticleEngineIndex = -1;
+        internal float TimeToLive;
+        internal Particle[] Particles;
+        internal int NumActive;
+
+        private HashSet<AreaModule> areaModules = new HashSet<AreaModule>();
+        private PooledList<ParticleModule> modules = new PooledList<ParticleModule>(ParticleEngine.UseArrayPool);
+        private Vector2 lastPosition;
+        private int[] newParticles;
+        private int numNew;
+        private int capacity;
+        private bool isDisposed;
+        private bool firstUpdate = true;
+
+        private object collectionLock = new object();
 
         public BlendMode BlendMode {
             get => blendMode;
@@ -56,11 +74,6 @@ namespace SE.Particles
             }
         }
         private byte layer;
-        
-        public bool IsVisible { get; internal set; }
-
-        public bool ParallelEmission = false;
-        public EmitterConfig Config;
 
         public Vector2 BoundsSize {
             get => boundsSize;
@@ -88,25 +101,6 @@ namespace SE.Particles
         }
         private Vector2 boundsSize;
 
-        public ParticleRendererBase Renderer { get; private set; }
-        public NativeComponent NativeComponent { get; private set; }
-
-        internal int ParticleEngineIndex = -1;
-        internal float TimeToLive;
-        internal Particle[] Particles;
-        internal int NumActive;
-        
-        private HashSet<AreaModule> areaModules = new HashSet<AreaModule>();
-        private PooledList<ParticleModule> modules = new PooledList<ParticleModule>(ParticleEngine.UseArrayPool);
-        private Vector2 lastPosition;
-        private int[] newParticles;
-        private int numNew;
-        private int capacity;
-        private bool isDisposed;
-        private bool firstUpdate = true;
-
-        private object collectionLock = new object();
-
         public Vector2 Position {
             get => Shape.Center;
             set {
@@ -120,18 +114,21 @@ namespace SE.Particles
             set => Shape.Rotation = value;
         }
 
-        public Vector4 Bounds { get; private set; } // X, Y, Width, Height
-
-        public int ParticlesLength => capacity;
-        public ref Particle GetParticle(int index) => ref Particles[index];
-        public Span<Particle> ActiveParticles => new Span<Particle>(Particles, 0, NumActive);
-        private Span<int> NewParticleIndexes => new Span<int>(newParticles, 0, numNew);
+        public Vector4 Bounds { get; private set; }
+        public ParticleRendererBase Renderer { get; private set; }
+        public NativeComponent NativeComponent { get; private set; }
 
         /// <summary>Controls whether or not the emitter will emit new particles.</summary>
         public bool EmissionEnabled { get; set; } = true;
 
         /// <summary>Enabled/Disabled state. Disabled emitters are not updated or registered to the particle engine.</summary>
         public bool Enabled { get; set; }
+        public bool IsVisible { get; internal set; }
+
+        public int ParticlesLength => capacity;
+        public ref Particle GetParticle(int index) => ref Particles[index];
+        public Span<Particle> ActiveParticles => new Span<Particle>(Particles, 0, NumActive);
+        private Span<int> NewParticleIndexes => new Span<int>(newParticles, 0, numNew);
 
         /// <summary>
         /// Emitter constructor.
@@ -172,12 +169,12 @@ namespace SE.Particles
             // Set the renderer.
             if (renderer != null) {
                 SetRenderer(renderer);
-            } else { 
-                if(ParticleEngine.GraphicsDeviceManager.GraphicsDevice == null)
+            } else {
+            #if MONOGAME
+                if (ParticleEngine.GraphicsDevice == null)
                     return;
 
                 // Set to default renderer since the parameter is null.
-            #if MONOGAME
                 SetRenderer(new InstancedParticleRenderer());
             #endif
             }
@@ -201,7 +198,7 @@ namespace SE.Particles
         {
             Renderer?.Dispose();
             Renderer = renderer;
-            renderer.InitializeInternal(this);
+            renderer?.InitializeInternal(this);
         }
 
         /// <summary>
@@ -211,9 +208,9 @@ namespace SE.Particles
         public void Draw(Matrix4x4 camMatrix)
         {
             if (Renderer == null)
-                throw new NullReferenceException("No renderer on emitter.");
-            if (!(Renderer is ParticleRenderer)) // TODO: Better exception.
-                throw new Exception("Invalid renderer.");
+                throw new ParticleRendererException("No renderer on emitter.");
+            if (!(Renderer is ParticleRenderer))
+                throw new ParticleRendererException("Invalid renderer.");
 
             ((ParticleRenderer)Renderer).Draw(camMatrix);
         }
@@ -226,9 +223,9 @@ namespace SE.Particles
         public void Draw(Matrix camMatrix)
         {
             if (Renderer == null)
-                throw new NullReferenceException("No renderer on emitter.");
-            if (!(Renderer is MGParticleRenderer)) // TODO: Better exception.
-                throw new Exception("ParticleRenderer is not a MonoGame-based renderer. Use the matrix4x4 overload instead.");
+                throw new ParticleRendererException("No renderer on emitter.");
+            if (!(Renderer is MGParticleRenderer))
+                throw new ParticleRendererException("ParticleRenderer is not a MonoGame-based renderer. Use the matrix4x4 overload instead.");
 
             ((MGParticleRenderer)Renderer).Draw(camMatrix);
         }
@@ -336,47 +333,48 @@ namespace SE.Particles
 
         private void UpdateEmission(float deltaTime)
         {
-            if (!Config.Emission.IsPlaying || Config.Emission.EmissionType == EmitterConfig.EmissionType.None || Config.Emission.Duration < 0.00001f)
+            EmitterConfig.EmissionConfig eConfig = Config.Emission;
+            if (!eConfig.IsPlaying || eConfig.EmissionType == EmitterConfig.EmissionType.None || eConfig.Duration < 0.00001f)
                 return;
 
             if (deltaTime > ParticleEngine.MaxEmissionTimeStep) {
                 deltaTime = ParticleEngine.MaxEmissionTimeStep;
             }
 
-            Config.Emission.CurrentTime += deltaTime;
-            float norm = Config.Emission.CurrentTime / Config.Emission.Duration;
+            eConfig.CurrentTime += deltaTime;
+            float norm = eConfig.CurrentTime / eConfig.Duration;
             float toQueue;
             if (norm >= 1.0f) {
                 norm = 1.0f;
-                if (Config.Emission.Loop) {
-                    Config.Emission.IsPlaying = true;
-                    Config.Emission.CurrentTime = 0.0f;
+                if (eConfig.Loop) {
+                    eConfig.IsPlaying = true;
+                    eConfig.CurrentTime = 0.0f;
                 } else {
-                    Config.Emission.IsPlaying = false;
+                    eConfig.IsPlaying = false;
                 }
             }
 
-            switch (Config.Emission.EmissionType) {
+            switch (eConfig.EmissionType) {
                 case EmitterConfig.EmissionType.None:
                     toQueue = 0.0f;
                     break;
                 case EmitterConfig.EmissionType.Constant:
-                    toQueue = Config.Emission.ConstantValue * deltaTime;
+                    toQueue = eConfig.ConstantValue * deltaTime;
                     break;
                 case EmitterConfig.EmissionType.Curve:
-                    toQueue = Config.Emission.CurveValue.Evaluate(norm) * deltaTime;
+                    toQueue = eConfig.CurveValue.Evaluate(norm) * deltaTime;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
-            Config.Emission.QueuedParticles += toQueue;
-            int i = (int)Config.Emission.QueuedParticles;
+            eConfig.QueuedParticles += toQueue;
+            int i = (int)eConfig.QueuedParticles;
             if (i <= 0)
                 return;
 
             Emit(i);
-            Config.Emission.QueuedParticles -= i;
+            eConfig.QueuedParticles -= i;
         }
 
         internal void CheckParticleIntersections(QuickList<Particle> list, AreaModule areaModule)
@@ -428,16 +426,17 @@ namespace SE.Particles
             NumActive--;
 
             // ->> CAUTION <<- Careful operations here to preserve particle IDs.
-            if (index != NumActive) {
-                ref Particle a = ref Particles[index];
-                ref Particle b = ref Particles[NumActive];
-                int idA = a.ID;
-                int idB = b.ID;
+            if (index == NumActive) 
+                return;
 
-                Particles[index] = Particles[NumActive];
-                b.ID = idA;
-                a.ID = idB;
-            }
+            ref Particle a = ref Particles[index];
+            ref Particle b = ref Particles[NumActive];
+            int idA = a.ID;
+            int idB = b.ID;
+
+            Particles[index] = Particles[NumActive];
+            b.ID = idA;
+            a.ID = idB;
         }
 
         public void Emit(int amount = 1)
@@ -446,15 +445,8 @@ namespace SE.Particles
             if (!Enabled || !EmissionEnabled || NumActive + amount > capacity)
                 return;
 
-            bool shouldMultiThread = amount >= 2048 / Environment.ProcessorCount;
-            if (shouldMultiThread && ParallelEmission) {
-                Parallel.For(0, amount, i => {
-                    EmitParticle(i, amount);
-                });
-            } else {
-                for (int i = 0; i < amount; i++) {
-                    EmitParticle(i, amount);
-                }
+            for (int i = 0; i < amount; i++) {
+                EmitParticle(i, amount);
             }
 
             NumActive += amount;
@@ -755,6 +747,7 @@ namespace SE.Particles
         public void DisposeAfter(float? time = null)
         {
             TimeToLive = time ?? Config.Life.maxLife;
+            Stop();
             ParticleEngine.DestroyPending(this);
         }
 

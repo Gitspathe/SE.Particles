@@ -11,11 +11,6 @@ namespace SE.Particles
         public const float _PI_OVER180 = (float)Math.PI / 180;
         public const float _180_OVER_PI = (float)(180 / Math.PI);
 
-        private const float _ONE_OVER_THREE = 1.0f / 3.0f;
-        private const float _TWO_OVER_THREE = 2.0f / 3.0f;
-        private const float _ONE_OVER_TWO = 1.0f / 2.0f;
-        private const float _ONE_OVER_SIX = 1.0f / 6.0f;
-
         public static Vector2 UpDirection => new Vector2(0.00000000f, -1.00000000f);
         public static Vector2 RightDirection => new Vector2(1.00000000f, 0.00000367f);
         public static Vector2 DownDirection => new Vector2(0.00000265f, 1.00000000f);
