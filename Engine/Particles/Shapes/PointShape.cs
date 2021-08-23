@@ -1,5 +1,7 @@
 ﻿using SE.Core.Extensions;
 using System.Numerics;
+using SE.Core;
+using SE.Utility;
 using Random = SE.Utility.Random;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
@@ -20,10 +22,10 @@ namespace SE.Particles.Shapes
 
     public class PointEmitterShape : PointShape, IEmitterShape
     {
-        public void Get(float uniformRatio, out Vector2 position, out Vector2 velocity)
+        public void Get(float uniformRatio, out Vector2 position, out Vector2 velocity, FRandom random)
         {
             position = Vector2.Zero;
-            Random.NextUnitVector(out velocity);
+            random.NextUnitVector(out velocity);
         }
     }
 }

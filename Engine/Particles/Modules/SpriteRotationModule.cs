@@ -200,29 +200,18 @@ namespace SE.Particles.Modules
             RandomCurve
         }
 
-        protected override void OnModuleModeChanged()
-        {
-            //throw new NotImplementedException();
-        }
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern Submodule* nativeModule_SpriteRotationModule_Ctor();
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_SpriteRotationModule_SetNone(Submodule* modulePtr);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_SpriteRotationModule_SetConstant(Submodule* modulePtr, float val);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_SpriteRotationModule_SetLerp(Submodule* modulePtr, float start, float end);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_SpriteRotationModule_SetCurve(Submodule* modulePtr, NativeCurve* curvePtr);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_SpriteRotationModule_SetRandomConstant(Submodule* modulePtr, float min, float max);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_SpriteRotationModule_SetRandomCurve(Submodule* modulePtr, NativeCurve* curvePtr);
     }

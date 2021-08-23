@@ -616,7 +616,7 @@ namespace SE.Core
     {
         public ThreadState State { get; private set; }
         public Exception Exception { get; private set; }
-
+        
         private Thread thread;
         private AutoResetEvent resetEvent = new AutoResetEvent(false);
         private QuickList<Emitter> emitters = new QuickList<Emitter>();

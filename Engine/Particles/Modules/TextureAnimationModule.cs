@@ -107,17 +107,10 @@ namespace SE.Particles.Modules
             Loop
         }
 
-        protected override void OnModuleModeChanged()
-        {
-            //throw new NotImplementedException();
-        }
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern Submodule* nativeModule_TextureAnimationModule_Ctor();
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_TextureAnimationModule_SetTextureSize(Submodule* modulePtr, NativeVector2 textureSize);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_TextureAnimationModule_SetOverLifetime(Submodule* modulePtr, int sheetRows, int sheetColumns);
     }

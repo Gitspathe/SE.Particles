@@ -30,11 +30,6 @@ namespace SE.Particles.Modules
             SubmodulePtr = nativeModule_HueModule_Ctor();
         }
 
-        protected override void OnModuleModeChanged()
-        {
-
-        }
-
         public void SetLerp(float end)
         {
             end1 = end;
@@ -167,27 +162,22 @@ namespace SE.Particles.Modules
             return module;
         }
 
-
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern Submodule* nativeModule_HueModule_Ctor();
-
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_HueModule_SetNone(Submodule* modulePtr);
-
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_HueModule_SetLerp(Submodule* modulePtr, float end);
-
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_HueModule_SetRandomLerp(Submodule* modulePtr, float min, float max);
-
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_HueModule_SetCurve(Submodule* modulePtr, NativeCurve* curvePtr);
-
         private enum Transition
         {
             Lerp,
             Curve,
             RandomLerp
         }
+
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern Submodule* nativeModule_HueModule_Ctor();
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void nativeModule_HueModule_SetNone(Submodule* modulePtr);
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void nativeModule_HueModule_SetLerp(Submodule* modulePtr, float end);
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void nativeModule_HueModule_SetRandomLerp(Submodule* modulePtr, float min, float max);
+        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void nativeModule_HueModule_SetCurve(Submodule* modulePtr, NativeCurve* curvePtr);
     }
 }

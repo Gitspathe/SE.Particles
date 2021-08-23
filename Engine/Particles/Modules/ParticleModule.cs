@@ -59,11 +59,6 @@ namespace SE.Particles.Modules
         {
             Emitter.NativeComponent.RemoveSubmodule(this);
         }
-
-        /// <summary>
-        /// Called when the module's mode is changed.
-        /// </summary>
-        protected abstract void OnModuleModeChanged();
     }
 
     public enum ModuleMode

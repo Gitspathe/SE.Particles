@@ -1,4 +1,6 @@
 ﻿using System.Numerics;
+using SE.Core;
+using SE.Utility;
 
 namespace SE.Particles.Shapes
 {
@@ -24,7 +26,7 @@ namespace SE.Particles.Shapes
         /// <param name="uniformRatio">Ratio for uniform emission.</param>
         /// <param name="position">Position for the new particle.</param>
         /// <param name="velocity">Velocity for the new particle.</param>
-        void Get(float uniformRatio, out Vector2 position, out Vector2 velocity);
+        void Get(float uniformRatio, out Vector2 position, out Vector2 velocity, FRandom random);
     }
 
     /// <summary>

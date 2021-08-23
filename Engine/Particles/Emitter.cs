@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using SE.Core;
 using SE.Core.Exceptions;
@@ -38,6 +39,9 @@ namespace SE.Particles
         internal Particle[] Particles;
         internal int NumActive;
 
+        private static int RandNum = Environment.TickCount / 100;
+
+        private FRandom random = new FRandom(Interlocked.Increment(ref RandNum));
         private HashSet<AreaModule> areaModules = new HashSet<AreaModule>();
         private PooledList<ParticleModule> modules = new PooledList<ParticleModule>(ParticleEngine.UseArrayPool);
         private Vector2 lastPosition;
@@ -276,8 +280,8 @@ namespace SE.Particles
             if (ParticleEngine.NativeEnabled) {
                 NativeComponent.OnParticlesActivated(NewParticleIndexes);
             }
+            
             numNew = 0;
-
             fixed (Particle* ptr = Particles) {
                 Particle* tail = ptr + NumActive;
                 int i = 0;
@@ -456,13 +460,13 @@ namespace SE.Particles
         private void EmitParticle(int i, int maxIteration)
         {
             fixed (Particle* particle = &Particles[NumActive + i]) {
-                Shape.Get((float)i / maxIteration, out particle->Position, out particle->Direction);
+                Shape.Get((float)i / maxIteration, out particle->Position, out particle->Direction, random);
                 particle->Position += Position;
                 particle->TimeAlive = 0.0f;
                 particle->SourceRectangle = new Int4(0, 0, (int)Config.Texture.Size.X, (int)Config.Texture.Size.Y);
 
                 // Set particle layer depth. Opaque must have proper draw order set.
-                particle->layerDepth = BlendMode == BlendMode.Opaque ? Random.Next() : 1.0f;
+                particle->layerDepth = BlendMode == BlendMode.Opaque ? random.NextSingle() : 1.0f;
 
                 // Configure particle speed.
                 EmitterConfig.SpeedConfig speed = Config.Speed;
@@ -471,11 +475,11 @@ namespace SE.Particles
                         particle->Speed = speed.Min;
                     } break;
                     case EmitterConfig.StartingValue.Random: {
-                        particle->Speed = Between(speed.Min, speed.Max, Random.Next());
+                        particle->Speed = Between(speed.Min, speed.Max, random.NextSingle());
                     } break;
                     case EmitterConfig.StartingValue.RandomCurve: {
                         lock (speed.Curve) {
-                            particle->Speed = speed.Curve.Evaluate(Random.Next());
+                            particle->Speed = speed.Curve.Evaluate(random.NextSingle());
                         }
                     } break;
                     default:
@@ -491,10 +495,10 @@ namespace SE.Particles
                     case EmitterConfig.StartingValue.Random: {
                         if (scale.TwoDimensions) {
                             particle->Scale = new Vector2(
-                                Between(scale.Min.X, scale.Max.X, Random.Next()),
-                                Between(scale.Min.Y, scale.Max.Y, Random.Next()));
+                                Between(scale.Min.X, scale.Max.X, random.NextSingle()),
+                                Between(scale.Min.Y, scale.Max.Y, random.NextSingle()));
                         } else {
-                            float s = Random.Next();
+                            float s = random.NextSingle();
                             particle->Scale = new Vector2(
                                 Between(scale.Min.X, scale.Max.X, s),
                                 Between(scale.Min.Y, scale.Max.Y, s));
@@ -504,11 +508,11 @@ namespace SE.Particles
                         if (scale.TwoDimensions) {
                             lock (scale.Curve) {
                                 particle->Scale = new Vector2(
-                                    scale.Curve.X.Evaluate(Random.Next()), 
-                                    scale.Curve.Y.Evaluate(Random.Next()));
+                                    scale.Curve.X.Evaluate(random.NextSingle()), 
+                                    scale.Curve.Y.Evaluate(random.NextSingle()));
                             }
                         } else {
-                            float rand = Random.Next();
+                            float rand = random.NextSingle();
                             lock (scale.Curve) { 
                                 particle->Scale = new Vector2(
                                     scale.Curve.X.Evaluate(rand), 
@@ -528,18 +532,18 @@ namespace SE.Particles
                     } break;
                     case EmitterConfig.StartingValue.Random: {
                         particle->Color = new Vector4(
-                            Between(color.Min.X, color.Max.X, Random.Next()),
-                            Between(color.Min.Y, color.Max.Y, Random.Next()),
-                            Between(color.Min.Z, color.Max.Z, Random.Next()),
-                            Between(color.Min.W, color.Max.W, Random.Next()));
+                            Between(color.Min.X, color.Max.X, random.NextSingle()),
+                            Between(color.Min.Y, color.Max.Y, random.NextSingle()),
+                            Between(color.Min.Z, color.Max.Z, random.NextSingle()),
+                            Between(color.Min.W, color.Max.W, random.NextSingle()));
                     } break;
                     case EmitterConfig.StartingValue.RandomCurve: {
                         lock (color.Curve) {
                             particle->Color = new Vector4(
-                                color.Curve.X.Evaluate(Random.Next()), 
-                                color.Curve.Y.Evaluate(Random.Next()),
-                                color.Curve.Z.Evaluate(Random.Next()),
-                                color.Curve.W.Evaluate(Random.Next()));
+                                color.Curve.X.Evaluate(random.NextSingle()), 
+                                color.Curve.Y.Evaluate(random.NextSingle()),
+                                color.Curve.Z.Evaluate(random.NextSingle()),
+                                color.Curve.W.Evaluate(random.NextSingle()));
                         }
                     } break;
                     default:
@@ -553,11 +557,11 @@ namespace SE.Particles
                         particle->InitialLife = life.Min;
                     } break;
                     case EmitterConfig.StartingValue.Random: {
-                        particle->InitialLife = Between(life.Min, life.Max, Random.Next());
+                        particle->InitialLife = Between(life.Min, life.Max, random.NextSingle());
                     } break;
                     case EmitterConfig.StartingValue.RandomCurve: {
                         lock (life.Curve) {
-                            particle->InitialLife = life.Curve.Evaluate(Random.Next());
+                            particle->InitialLife = life.Curve.Evaluate(random.NextSingle());
                         }
                     } break;
                     default:

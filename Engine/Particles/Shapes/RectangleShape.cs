@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Numerics;
+using SE.Core;
 using static SE.Particles.ParticleMath;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
 using Random = SE.Utility.Random;
 using SE.Core.Extensions;
+using SE.Utility;
 
 namespace SE.Particles.Shapes
 {
@@ -67,12 +69,12 @@ namespace SE.Particles.Shapes
             Uniform = uniform;
         }
 
-        public void Get(float uniformRatio, out Vector2 position, out Vector2 velocity)
+        public void Get(float uniformRatio, out Vector2 position, out Vector2 velocity, FRandom random)
         {
             // Return random position and rotation within rectangle if not edge only.
             if (!EdgeOnly) {
-                position = new Vector2(Random.Next(Size.X), Random.Next(Size.Y)) - Size / 2.0f;
-                velocity = Random.NextUnitVector();
+                position = new Vector2(random.NextSingle(Size.X), random.NextSingle(Size.Y)) - Size / 2.0f;
+                velocity = random.NextUnitVector();
                 return;
             }
 
@@ -80,7 +82,7 @@ namespace SE.Particles.Shapes
             float totalLength = (Bounds.Z * 2.0f) + (Bounds.W * 2.0f);
             float len = Uniform 
                 ? uniformRatio * totalLength
-                : Random.Next(totalLength);
+                : random.NextSingle(totalLength);
 
             // Get position from rectangle edges from specified length.
             Vector4 bounds = Bounds;
@@ -111,7 +113,7 @@ namespace SE.Particles.Shapes
                 velocity = -velocity;
             // Randomize velocity if there is no emission direction.
             else if (Direction == EmissionDirection.None)
-                velocity = Random.NextUnitVector();
+                velocity = random.NextUnitVector();
         }
     }
 }

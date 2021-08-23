@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Numerics;
+using SE.Core;
 using SE.Core.Extensions;
+using SE.Utility;
 using Random = SE.Utility.Random;
 using static SE.Particles.ParticleMath;
 
@@ -85,23 +87,23 @@ namespace SE.Particles.Shapes
             Uniform = uniform;
         }
 
-        public void Get(float uniformRatio, out Vector2 position, out Vector2 velocity)
+        public void Get(float uniformRatio, out Vector2 position, out Vector2 velocity, FRandom random)
         {
             float rotation;
             float distance = EdgeOnly 
                 ? Radius 
-                : Random.Next(0.0f, Radius);
+                : random.NextSingle(0.0f, Radius);
 
             if (IsFullCircle) {
                 // Optimized algorithm for full 360 degree circle.
                 rotation = Uniform
                     ? Between(-_PI, _PI, uniformRatio) 
-                    : Random.NextAngle();
+                    : random.NextAngle();
             } else {
                 // Slower algorithm for semicircles.
                 rotation = Uniform
                     ? Between(-_PI, -_PI + (_2PI * AngleRatio), uniformRatio) + Rotation
-                    : Random.NextAngle(AngleRatio) + Rotation;
+                    : random.NextAngle(AngleRatio) + Rotation;
             }
 
             velocity = rotation.ToDirectionVector();
@@ -110,7 +112,7 @@ namespace SE.Particles.Shapes
                 : new Vector2(velocity.X * distance, velocity.Y * distance);
 
             if (Direction == EmissionDirection.None)
-                velocity = Random.NextUnitVector();
+                velocity = random.NextUnitVector();
         }
     }
 }

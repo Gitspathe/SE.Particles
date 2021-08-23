@@ -181,23 +181,14 @@ namespace SE.Particles.Modules
             RandomLerp
         }
 
-        protected override void OnModuleModeChanged()
-        {
-            //throw new NotImplementedException();
-        }
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern Submodule* nativeModule_ColorModule_Ctor();
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_ColorModule_SetNone(Submodule* modulePtr);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_ColorModule_SetLerp(Submodule* modulePtr, NativeVector4 end);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_ColorModule_SetRandomLerp(Submodule* modulePtr, NativeVector4 min, NativeVector4 max);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_ColorModule_SetCurve(Submodule* modulePtr, NativeCurve4* curvePtr);
     }

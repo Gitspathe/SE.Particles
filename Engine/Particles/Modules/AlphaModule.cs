@@ -170,22 +170,13 @@ namespace SE.Particles.Modules
 
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern Submodule* nativeModule_AlphaModule_Ctor();
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_AlphaModule_SetNone(Submodule* modulePtr);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_AlphaModule_SetLerp(Submodule* modulePtr, float end);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_AlphaModule_SetRandomLerp(Submodule* modulePtr, float min, float max);
-
         [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void nativeModule_AlphaModule_SetCurve(Submodule* modulePtr, NativeCurve* curvePtr);
-
-        protected override void OnModuleModeChanged()
-        {
-            //throw new NotImplementedException();
-        }
     }
 }
