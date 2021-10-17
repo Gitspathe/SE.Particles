@@ -1,10 +1,10 @@
-﻿using System;
+﻿using SE.Core;
+using SE.Utility;
+using System;
 using System.Runtime.InteropServices;
 using System.Security;
-using SE.Core;
-using SE.Utility;
-using Random = SE.Utility.Random;
 using static SE.Particles.ParticleMath;
+using Random = SE.Utility.Random;
 
 namespace SE.Particles.Modules
 {
@@ -68,7 +68,7 @@ namespace SE.Particles.Modules
             this.curve = curve;
             transitionType = TransitionType.RandomCurve;
             RegenerateRandom();
-            
+
             nativeModule_SpriteRotationModule_SetRandomCurve(SubmodulePtr, NativeUtil.CopyCurveToNativeCurve(curve));
         }
 
@@ -79,7 +79,7 @@ namespace SE.Particles.Modules
 
         private void RegenerateRandom()
         {
-            if (!IsRandom || Emitter == null) 
+            if (!IsRandom || Emitter == null)
                 return;
 
             rand = new float[Emitter.ParticlesLength];
@@ -104,7 +104,7 @@ namespace SE.Particles.Modules
 
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
-            if(ParticleEngine.NativeEnabled) {
+            if (ParticleEngine.NativeEnabled) {
                 return;
             }
 
@@ -115,7 +115,8 @@ namespace SE.Particles.Modules
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         particle->SpriteRotation += start * deltaTime;
                     }
-                } break;
+                }
+                break;
                 case TransitionType.Lerp: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         float angleDelta = ParticleMath.Lerp(
@@ -125,22 +126,26 @@ namespace SE.Particles.Modules
 
                         particle->SpriteRotation += angleDelta * deltaTime;
                     }
-                } break;
+                }
+                break;
                 case TransitionType.Curve: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         particle->SpriteRotation += curve.Evaluate(particle->TimeAlive / particle->InitialLife) * deltaTime;
                     }
-                } break;
+                }
+                break;
                 case TransitionType.RandomConstant: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         particle->SpriteRotation += Between(start, end, rand[particle->ID]) * deltaTime;
                     }
-                } break;
+                }
+                break;
                 case TransitionType.RandomCurve: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         particle->SpriteRotation += curve.Evaluate(rand[particle->ID]) * deltaTime;
                     }
-                } break;
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }

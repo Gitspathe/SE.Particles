@@ -1,6 +1,5 @@
-﻿using System.Numerics;
-using SE.Core;
-using SE.Utility;
+﻿using SE.Utility;
+using System.Numerics;
 
 namespace SE.Particles.Shapes
 {

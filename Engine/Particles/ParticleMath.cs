@@ -21,6 +21,10 @@ namespace SE.Particles
             => value1 + (value2 - value1) * amount;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte Lerp(byte value1, byte value2, float amount)
+            => (byte)(value1 + (value2 - value1) * amount);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Swap(ref float x, ref float y)
         {
             float tmpX = x;
@@ -29,22 +33,45 @@ namespace SE.Particles
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Swap(ref byte x, ref byte y)
+        {
+            byte tmpX = x;
+            x = y;
+            y = tmpX;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Clamp(float val, float min, float max)
         {
-            if(val < min)
+            if (val < min)
                 return min;
-            if(val > max)
+            if (val > max)
                 return max;
 
             return val;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Between(float min, float max, float ratio) 
+        public static byte Clamp(byte val, byte min, byte max)
+        {
+            if (val < min)
+                return min;
+            if (val > max)
+                return max;
+
+            return val;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Between(float min, float max, float ratio)
             => (min + ((max - min) * ratio));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetRatio(float min, float max, float val) 
+        public static byte Between(byte min, byte max, float ratio)
+            => (byte)(min + ((max - min) * ratio));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float GetRatio(float min, float max, float val)
             => (val - min) / (max - min);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

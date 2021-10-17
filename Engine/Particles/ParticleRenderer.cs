@@ -8,7 +8,7 @@ using System.Buffers;
 #if MONOGAME
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Vector3 = Microsoft.Xna.Framework.Vector3;
+using MGVector3 = Microsoft.Xna.Framework.Vector3;
 #endif
 
 namespace SE.Particles
@@ -53,7 +53,7 @@ namespace SE.Particles
         private VertexBufferBinding vertexBufferBinding;
 
         private InstanceData[] instanceData;
-        private VertexBuffer instanceBuffer;
+        private DynamicVertexBuffer instanceBuffer;
         private VertexBufferBinding instanceBufferBinding;
 
         private Effect effect;
@@ -80,7 +80,7 @@ namespace SE.Particles
         {
             Viewport viewPort = Graphics.Viewport;
 
-            view = Matrix.CreateLookAt(new Vector3(0, 0, 0), Vector3.Forward, Vector3.Up);
+            view = Matrix.CreateLookAt(new MGVector3(0, 0, 0), MGVector3.Forward, MGVector3.Up);
             projection = Matrix.CreateOrthographicOffCenter(0, viewPort.Width, viewPort.Height, 0, 0, -10);
             projection = view * projection;
 
@@ -96,13 +96,19 @@ namespace SE.Particles
             fixed (Particle* arrPtr = emitter.Particles) {
                 Particle* tail = arrPtr + emitter.NumActive;
                 for (Particle* p = arrPtr; p < tail; p++, i++) {
-                    Vector2 offset = new Vector2(p->SourceRectangle.X, p->SourceRectangle.Y);
                     fixed (InstanceData* data = &instanceData[i]) {
+
+                        data->TextureCoordOffset = new Vector2(p->SourceRectangle.X, p->SourceRectangle.Y) / emitter.Config.Texture.FullTextureSize;
+
+                        // If we are running modern .net, use a fast MemoryCopy. Otherwise, manually copy over data.
+                    #if NETSTANDARD2_0_OR_GREATER
+                        Buffer.MemoryCopy(p, data, InstanceData._SIZE_IN_BYTES, Particle._RENDER_SIZE);
+                    #else
                         data->InstanceScale = p->Scale;
                         data->InstanceRotation = p->SpriteRotation;
-                        data->TextureCoordOffset = offset / emitter.Config.Texture.FullTextureSize;
-                        data->InstanceColor = new Color(p->Color.X / 360.0f, p->Color.Y, p->Color.Z, p->Color.W);
                         data->InstancePosition = p->Position;
+                        data->InstanceColor = p->Color;
+                    #endif
                     }
                 }
             }
@@ -116,7 +122,7 @@ namespace SE.Particles
 
             // Setup various graphics device stuff.
             // TODO: See how SpriteBatch handles manually setting these!
-            Graphics.BlendState = BlendState.Additive;
+            Graphics.BlendState = BlendState.NonPremultiplied;
             Graphics.DepthStencilState = DepthStencilState.None;
             Graphics.SamplerStates[0] = SamplerState.PointClamp;
             Graphics.RasterizerState = RasterizerState.CullCounterClockwise;
@@ -128,8 +134,8 @@ namespace SE.Particles
             instanceBuffer.SetData(instanceData, 0, emitter.NumActive);
 
             // set buffer bindings to the device
-            Graphics.SetVertexBuffers(vertexBufferBinding, instanceBufferBinding);
             Graphics.Indices = indexBuffer;
+            Graphics.SetVertexBuffers(vertexBufferBinding, instanceBufferBinding);
 
             // Set the shader technique pass and then Draw
             effect.CurrentTechnique.Passes[0].Apply();
@@ -168,7 +174,7 @@ namespace SE.Particles
 
             indexBuffer = new IndexBuffer(Graphics, typeof(short), 6, BufferUsage.WriteOnly);
             vertexBuffer = new VertexBuffer(Graphics, VertexPositionTexture.VertexDeclaration, 4, BufferUsage.WriteOnly);
-            instanceBuffer = new VertexBuffer(Graphics, InstanceData.VertexDeclaration, particlesLength, BufferUsage.WriteOnly);
+            instanceBuffer = new DynamicVertexBuffer(Graphics, InstanceData.VertexDeclaration, particlesLength, BufferUsage.WriteOnly);
 
             SetupVertexBuffer();
 
@@ -185,7 +191,7 @@ namespace SE.Particles
             // set up the instance stuff
             instanceData = ArrayPool<InstanceData>.Shared.Rent(particlesLength);
             for (int i = 0; i < particlesLength; i++) {
-                instanceData[i].InstanceColor = Color.White;
+                instanceData[i].InstanceColor = ParticleColor.Black;
                 instanceData[i].InstancePosition = new Vector2(0, 0);
             }
 
@@ -211,22 +217,24 @@ namespace SE.Particles
     public struct InstanceData : IVertexType
     {
         public Vector2 InstancePosition;
-        public Color InstanceColor;
-        public Vector2 TextureCoordOffset;
         public Vector2 InstanceScale;
         public float InstanceRotation;
+        public ParticleColor InstanceColor;
+        public Vector2 TextureCoordOffset;
 
         public static readonly VertexDeclaration VertexDeclaration;
         VertexDeclaration IVertexType.VertexDeclaration => VertexDeclaration;
+
+        public const long _SIZE_IN_BYTES = 32;
 
         static InstanceData()
         {
             var elements = new[] {
                 new VertexElement(0, VertexElementFormat.Vector2, VertexElementUsage.Position, 1),
-                new VertexElement(8, VertexElementFormat.Color, VertexElementUsage.Color, 1),
-                new VertexElement(12, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 1),
-                new VertexElement(20, VertexElementFormat.Vector2, VertexElementUsage.Position, 2),
-                new VertexElement(28, VertexElementFormat.Single, VertexElementUsage.Position, 3)
+                new VertexElement(8, VertexElementFormat.Vector2, VertexElementUsage.Position, 2),
+                new VertexElement(16, VertexElementFormat.Single, VertexElementUsage.Position, 3),
+                new VertexElement(20, VertexElementFormat.Color, VertexElementUsage.Color, 1),
+                new VertexElement(24, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 1),
             };
             VertexDeclaration = new VertexDeclaration(elements);
         }

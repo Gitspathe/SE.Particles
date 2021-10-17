@@ -1,12 +1,10 @@
-﻿using System;
-using System.Numerics;
+﻿using SE.Core;
+using SE.Utility;
+using System;
 using System.Runtime.InteropServices;
 using System.Security;
-using SE.Core;
-using SE.Engine.Utility;
-using SE.Utility;
-using Random = SE.Utility.Random;
 using static SE.Particles.ParticleMath;
+using Random = SE.Utility.Random;
 
 namespace SE.Particles.Modules
 {
@@ -56,7 +54,7 @@ namespace SE.Particles.Modules
             nativeModule_LightnessModule_SetRandomLerp(SubmodulePtr, min, max);
         }
 
-        public override ParticleModule DeepCopy() 
+        public override ParticleModule DeepCopy()
             => new LightnessModule {
                 transitionType = transitionType,
                 end1 = end1,
@@ -72,7 +70,7 @@ namespace SE.Particles.Modules
 
         private void RegenerateRandom()
         {
-            if (!IsRandom || Emitter == null) 
+            if (!IsRandom || Emitter == null)
                 return;
 
             randEndLits = new float[Emitter.ParticlesLength];
@@ -87,7 +85,7 @@ namespace SE.Particles.Modules
             fixed (Particle* particleArr = Emitter.Particles) {
                 for (int i = 0; i < particlesIndex.Length; i++) {
                     Particle* particle = &particleArr[particlesIndex[i]];
-                    startLits[particle->ID] = particle->Color.Z;
+                    startLits[particle->ID] = particle->Color.Lightness;
                     if (!IsRandom)
                         continue;
 
@@ -108,32 +106,23 @@ namespace SE.Particles.Modules
             switch (transitionType) {
                 case Transition.Lerp: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
-                        particle->Color = new Vector4(
-                            particle->Color.X, 
-                            particle->Color.Y, 
-                            ParticleMath.Lerp(startLits[particle->ID], end1, particle->TimeAlive / particle->InitialLife), 
-                            particle->Color.W);
+                        particle->Color.Lightness = ParticleMath.Lerp(startLits[particle->ID], end1, particle->TimeAlive / particle->InitialLife);
                     }
-                } break;
+                }
+                break;
                 case Transition.Curve: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         float lifeRatio = particle->TimeAlive / particle->InitialLife;
-                        particle->Color = new Vector4(
-                            particle->Color.X,
-                            particle->Color.Y,
-                            curve.Evaluate(lifeRatio),
-                            particle->Color.W);
+                        particle->Color.Lightness = (byte)curve.Evaluate(lifeRatio);
                     }
-                } break;
+                }
+                break;
                 case Transition.RandomLerp: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++, i++) {
-                        particle->Color = new Vector4(
-                            particle->Color.X,
-                            particle->Color.Y,
-                            ParticleMath.Lerp(startLits[particle->ID], randEndLits[particle->ID], particle->TimeAlive / particle->InitialLife),
-                            particle->Color.W);
+                        particle->Color.Lightness = ParticleMath.Lerp(startLits[particle->ID], randEndLits[particle->ID], particle->TimeAlive / particle->InitialLife);
                     }
-                } break;
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }

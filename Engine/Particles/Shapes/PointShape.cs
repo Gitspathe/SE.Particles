@@ -1,8 +1,5 @@
 ﻿using SE.Core.Extensions;
-using System.Numerics;
-using SE.Core;
 using SE.Utility;
-using Random = SE.Utility.Random;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
 
@@ -13,7 +10,7 @@ namespace SE.Particles.Shapes
         public Vector2 Center { get; set; }
         public float Rotation { get; set; }
 
-        public bool Intersects(Vector2 point) 
+        public bool Intersects(Vector2 point)
             => point == Center;
 
         public bool Intersects(Vector4 bounds)

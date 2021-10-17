@@ -1,6 +1,6 @@
-﻿using System;
-using SE.Core.Extensions;
+﻿using SE.Core.Extensions;
 using SE.Utility;
+using System;
 
 namespace SE.Particles
 {
@@ -16,10 +16,10 @@ namespace SE.Particles
             this.emitters = emitters;
         }
 
-        public static implicit operator EmitterFilterer(QuickList<Emitter> emitters) 
+        public static implicit operator EmitterFilterer(QuickList<Emitter> emitters)
             => new EmitterFilterer(emitters);
 
-        public static implicit operator QuickList<Emitter>(EmitterFilterer filter) 
+        public static implicit operator QuickList<Emitter>(EmitterFilterer filter)
             => filter.emitters;
 
         public EmitterFilterer Include(Func<Emitter, bool> predicate)

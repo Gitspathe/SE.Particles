@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading;
-using System.Threading.Tasks;
 using SE.Core;
 using SE.Core.Exceptions;
 using SE.Particles.AreaModules;
@@ -12,11 +11,9 @@ using SE.Particles.Shapes;
 using SE.Utility;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
-using Random = SE.Utility.Random;
 using static SE.Particles.ParticleMath;
 
 #if MONOGAME
-using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework;
 #endif
 
@@ -44,7 +41,6 @@ namespace SE.Particles
         private FRandom random = new FRandom(Interlocked.Increment(ref RandNum));
         private HashSet<AreaModule> areaModules = new HashSet<AreaModule>();
         private PooledList<ParticleModule> modules = new PooledList<ParticleModule>(ParticleEngine.UseArrayPool);
-        private Vector2 lastPosition;
         private int[] newParticles;
         private int numNew;
         private int capacity;
@@ -56,7 +52,7 @@ namespace SE.Particles
         public BlendMode BlendMode {
             get => blendMode;
             set {
-                if(blendMode == value)
+                if (blendMode == value)
                     return;
 
                 ParticleEngine.RemoveEmitter(this);
@@ -69,7 +65,7 @@ namespace SE.Particles
         public byte Layer {
             get => layer;
             set {
-                if(layer == value)
+                if (layer == value)
                     return;
 
                 ParticleEngine.RemoveEmitter(this);
@@ -85,25 +81,27 @@ namespace SE.Particles
                 try {
                     if (value.X <= 0 || value.Y <= 0)
                         throw new InvalidEmitterValueException($"{nameof(BoundsSize)} must have values greater than zero.");
-                    
+
                     boundsSize = value;
                     Bounds = new Vector4(Position.X - (boundsSize.X / 2.0f), Position.Y - (boundsSize.Y / 2.0f), boundsSize.X, boundsSize.Y);
                 } catch (Exception) {
-                    if (ParticleEngine.ErrorHandling == ErrorHandling.Throw) 
+                    if (ParticleEngine.ErrorHandling == ErrorHandling.Throw)
                         throw;
 
                     boundsSize = new Vector2(
-                        Clamp(value.X, 1.0f, float.MaxValue), 
+                        Clamp(value.X, 1.0f, float.MaxValue),
                         Clamp(value.Y, 1.0f, float.MaxValue));
                     Bounds = new Vector4(
-                        Position.X - (boundsSize.X / 2.0f), 
-                        Position.Y - (boundsSize.Y / 2.0f), 
-                        boundsSize.X, 
+                        Position.X - (boundsSize.X / 2.0f),
+                        Position.Y - (boundsSize.Y / 2.0f),
+                        boundsSize.X,
                         boundsSize.Y);
                 }
             }
         }
         private Vector2 boundsSize;
+
+        public Vector2 LastPosition { get; private set; }
 
         public Vector2 Position {
             get => Shape.Center;
@@ -174,13 +172,13 @@ namespace SE.Particles
             if (renderer != null) {
                 SetRenderer(renderer);
             } else {
-            #if MONOGAME
+#if MONOGAME
                 if (ParticleEngine.GraphicsDevice == null)
                     return;
 
                 // Set to default renderer since the parameter is null.
                 SetRenderer(new InstancedParticleRenderer());
-            #endif
+#endif
             }
 
             NativeComponent = new NativeComponent(this);
@@ -191,7 +189,7 @@ namespace SE.Particles
         /// </summary>
         /// <param name="capacity">Number of particles allocated.</param>
         /// <param name="shape">Emitter shape.</param>
-        public Emitter(int capacity = 2048, IEmitterShape shape = null) 
+        public Emitter(int capacity = 2048, IEmitterShape shape = null)
             : this(new Vector2(512.0f, 512.0f), capacity, shape) { }
 
         /// <summary>
@@ -219,7 +217,7 @@ namespace SE.Particles
             ((ParticleRenderer)Renderer).Draw(camMatrix);
         }
 
-    #if MONOGAME
+#if MONOGAME
         /// <summary>
         /// Renders particle emitter.
         /// </summary>
@@ -233,7 +231,7 @@ namespace SE.Particles
 
             ((MGParticleRenderer)Renderer).Draw(camMatrix);
         }
-    #endif
+#endif
 
         /// <summary>
         /// Gets a pointer to the particle array.
@@ -263,7 +261,7 @@ namespace SE.Particles
         {
             ParticleModule[] modulesArr = modules.Array;
             if (firstUpdate) {
-                lastPosition = Position;
+                LastPosition = Position;
                 firstUpdate = false;
             }
 
@@ -280,7 +278,7 @@ namespace SE.Particles
             if (ParticleEngine.NativeEnabled) {
                 NativeComponent.OnParticlesActivated(NewParticleIndexes);
             }
-            
+
             numNew = 0;
             fixed (Particle* ptr = Particles) {
                 Particle* tail = ptr + NumActive;
@@ -318,12 +316,14 @@ namespace SE.Particles
                         for (Particle* particle = ptr; particle < tail; particle++) {
                             particle->Position += particle->Direction * particle->Speed * deltaTime;
                         }
-                    } break;
+                    }
+                    break;
                     case Space.Local: {
                         for (Particle* particle = ptr; particle < tail; particle++) {
-                            particle->Position += (particle->Direction * particle->Speed * deltaTime) + (Position - lastPosition);
+                            particle->Position += (particle->Direction * particle->Speed * deltaTime) + (Position - LastPosition);
                         }
-                    } break;
+                    }
+                    break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -332,7 +332,7 @@ namespace SE.Particles
                 Renderer?.OnEmitterUpdate();
             }
 
-            lastPosition = Position;
+            LastPosition = Position;
         }
 
         private void UpdateEmission(float deltaTime)
@@ -430,7 +430,7 @@ namespace SE.Particles
             NumActive--;
 
             // ->> CAUTION <<- Careful operations here to preserve particle IDs.
-            if (index == NumActive) 
+            if (index == NumActive)
                 return;
 
             ref Particle a = ref Particles[index];
@@ -445,7 +445,7 @@ namespace SE.Particles
 
         public void Emit(int amount = 1)
         {
-            amount = (int) Clamp(amount, 1.0f, capacity - NumActive);
+            amount = (int)Clamp(amount, 1.0f, capacity - NumActive);
             if (!Enabled || !EmissionEnabled || NumActive + amount > capacity)
                 return;
 
@@ -473,15 +473,18 @@ namespace SE.Particles
                 switch (Config.Speed.StartValueType) {
                     case EmitterConfig.StartingValue.Normal: {
                         particle->Speed = speed.Min;
-                    } break;
+                    }
+                    break;
                     case EmitterConfig.StartingValue.Random: {
                         particle->Speed = Between(speed.Min, speed.Max, random.NextSingle());
-                    } break;
+                    }
+                    break;
                     case EmitterConfig.StartingValue.RandomCurve: {
                         lock (speed.Curve) {
                             particle->Speed = speed.Curve.Evaluate(random.NextSingle());
                         }
-                    } break;
+                    }
+                    break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -491,7 +494,8 @@ namespace SE.Particles
                 switch (Config.Scale.StartValueType) {
                     case EmitterConfig.StartingValue.Normal: {
                         particle->Scale = scale.Min;
-                    } break;
+                    }
+                    break;
                     case EmitterConfig.StartingValue.Random: {
                         if (scale.TwoDimensions) {
                             particle->Scale = new Vector2(
@@ -503,23 +507,25 @@ namespace SE.Particles
                                 Between(scale.Min.X, scale.Max.X, s),
                                 Between(scale.Min.Y, scale.Max.Y, s));
                         }
-                    } break;
+                    }
+                    break;
                     case EmitterConfig.StartingValue.RandomCurve: {
                         if (scale.TwoDimensions) {
                             lock (scale.Curve) {
                                 particle->Scale = new Vector2(
-                                    scale.Curve.X.Evaluate(random.NextSingle()), 
+                                    scale.Curve.X.Evaluate(random.NextSingle()),
                                     scale.Curve.Y.Evaluate(random.NextSingle()));
                             }
                         } else {
                             float rand = random.NextSingle();
-                            lock (scale.Curve) { 
+                            lock (scale.Curve) {
                                 particle->Scale = new Vector2(
-                                    scale.Curve.X.Evaluate(rand), 
+                                    scale.Curve.X.Evaluate(rand),
                                     scale.Curve.Y.Evaluate(rand));
                             }
                         }
-                    } break;
+                    }
+                    break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -529,23 +535,26 @@ namespace SE.Particles
                 switch (Config.Color.StartValueType) {
                     case EmitterConfig.StartingValue.Normal: {
                         particle->Color = color.Min;
-                    } break;
+                    }
+                    break;
                     case EmitterConfig.StartingValue.Random: {
-                        particle->Color = new Vector4(
-                            Between(color.Min.X, color.Max.X, random.NextSingle()),
-                            Between(color.Min.Y, color.Max.Y, random.NextSingle()),
-                            Between(color.Min.Z, color.Max.Z, random.NextSingle()),
-                            Between(color.Min.W, color.Max.W, random.NextSingle()));
-                    } break;
+                        particle->Color = new ParticleColor(
+                            Between(color.Min.Hue, color.Max.Hue, random.NextSingle()),
+                            Between(color.Min.Saturation, color.Max.Saturation, random.NextSingle()),
+                            Between(color.Min.Lightness, color.Max.Lightness, random.NextSingle()),
+                            Between(color.Min.Alpha, color.Max.Alpha, random.NextSingle()));
+                    }
+                    break;
                     case EmitterConfig.StartingValue.RandomCurve: {
                         lock (color.Curve) {
-                            particle->Color = new Vector4(
-                                color.Curve.X.Evaluate(random.NextSingle()), 
+                            particle->Color = new ParticleColor(
+                                color.Curve.X.Evaluate(random.NextSingle()),
                                 color.Curve.Y.Evaluate(random.NextSingle()),
                                 color.Curve.Z.Evaluate(random.NextSingle()),
                                 color.Curve.W.Evaluate(random.NextSingle()));
                         }
-                    } break;
+                    }
+                    break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -555,15 +564,18 @@ namespace SE.Particles
                 switch (Config.Life.StartValueType) {
                     case EmitterConfig.StartingValue.Normal: {
                         particle->InitialLife = life.Min;
-                    } break;
+                    }
+                    break;
                     case EmitterConfig.StartingValue.Random: {
                         particle->InitialLife = Between(life.Min, life.Max, random.NextSingle());
-                    } break;
+                    }
+                    break;
                     case EmitterConfig.StartingValue.RandomCurve: {
                         lock (life.Curve) {
                             particle->InitialLife = life.Curve.Evaluate(random.NextSingle());
                         }
-                    } break;
+                    }
+                    break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -594,7 +606,7 @@ namespace SE.Particles
             }
         }
 
-        public void RemoveModules<T>() where T : ParticleModule 
+        public void RemoveModules<T>() where T : ParticleModule
             => RemoveModules(typeof(T));
 
         public bool RemoveModules(Type moduleType)
@@ -619,7 +631,7 @@ namespace SE.Particles
             lock (collectionLock) {
                 ParticleModule[] arr = modules.Array;
                 for (int i = modules.Count - 1; i >= 0; i--) {
-                    if (arr[i].GetType() != moduleType) 
+                    if (arr[i].GetType() != moduleType)
                         continue;
 
                     ParticleModule found = arr[i];
@@ -633,8 +645,8 @@ namespace SE.Particles
             }
         }
 
-        public T GetModule<T>() where T : ParticleModule 
-            => (T) GetModule(typeof(T));
+        public T GetModule<T>() where T : ParticleModule
+            => (T)GetModule(typeof(T));
 
         public ParticleModule GetModule(Type moduleType)
         {
@@ -654,7 +666,7 @@ namespace SE.Particles
             }
         }
 
-        public IEnumerable<T> GetModules<T>() where T : ParticleModule 
+        public IEnumerable<T> GetModules<T>() where T : ParticleModule
             => GetModules(typeof(T)) as IEnumerable<T>;
 
         public IEnumerable<ParticleModule> GetModules(Type moduleType)
@@ -710,7 +722,7 @@ namespace SE.Particles
                 AddModule(module);
         }
 
-        
+
         internal void AddAreaModule(AreaModule mod)
         {
             lock (collectionLock)
@@ -729,7 +741,7 @@ namespace SE.Particles
                 return areaModules;
         }
 
-        internal (byte, BlendMode) GetKey() 
+        internal (byte, BlendMode) GetKey()
             => (Layer, BlendMode);
 
         public Emitter DeepCopy()
@@ -755,7 +767,7 @@ namespace SE.Particles
             ParticleEngine.DestroyPending(this);
         }
 
-        public void Dispose() 
+        public void Dispose()
             => DisposeAfter(-1.0f); // Dispose next frame.
 
         internal void DisposeInternal()
@@ -765,7 +777,7 @@ namespace SE.Particles
 
         protected virtual void Dispose(bool disposing)
         {
-            if(isDisposed)
+            if (isDisposed)
                 return;
 
             ParticleEngine.RemoveEmitter(this);

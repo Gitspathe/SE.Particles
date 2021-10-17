@@ -1,8 +1,7 @@
-﻿using System;
+﻿using SE.Particles.Modules;
+using System;
 using System.Runtime.InteropServices;
 using System.Security;
-using SE.Core;
-using SE.Particles.Modules;
 
 namespace SE.Particles
 {

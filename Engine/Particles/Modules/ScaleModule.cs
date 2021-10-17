@@ -1,10 +1,10 @@
-﻿using System;
+﻿using SE.Core;
+using System;
 using System.Runtime.InteropServices;
 using System.Security;
-using SE.Core;
-using Random = SE.Utility.Random;
-using Curve = SE.Utility.Curve;
 using static SE.Particles.ParticleMath;
+using Curve = SE.Utility.Curve;
+using Random = SE.Utility.Random;
 using Vector2 = System.Numerics.Vector2;
 
 namespace SE.Particles.Modules
@@ -15,7 +15,7 @@ namespace SE.Particles.Modules
         public bool AbsoluteValue {
             get => absoluteValue;
             set {
-                if(value == absoluteValue)
+                if (value == absoluteValue)
                     return;
 
                 absoluteValue = value;
@@ -72,7 +72,7 @@ namespace SE.Particles.Modules
 
         private void RegenerateRandom()
         {
-            if (!IsRandom || Emitter == null) 
+            if (!IsRandom || Emitter == null)
                 return;
 
             rand = new float[Emitter.ParticlesLength];
@@ -112,7 +112,8 @@ namespace SE.Particles.Modules
                             ? new Vector2(scale, scale)
                             : new Vector2(scale, scale) * startScales[particle->ID];
                     }
-                } break;
+                }
+                break;
                 case Transition.Curve: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         float scale = curve.Evaluate(particle->TimeAlive / particle->InitialLife);
@@ -120,7 +121,8 @@ namespace SE.Particles.Modules
                             ? new Vector2(scale, scale)
                             : new Vector2(scale, scale) * startScales[particle->ID];
                     }
-                } break;
+                }
+                break;
                 case Transition.RandomCurve: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         float scale = curve.Evaluate(rand[particle->ID]);
@@ -128,13 +130,14 @@ namespace SE.Particles.Modules
                             ? new Vector2(scale, scale)
                             : new Vector2(scale, scale) * startScales[particle->ID];
                     }
-                } break;
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        public override ParticleModule DeepCopy() 
+        public override ParticleModule DeepCopy()
             => new ScaleModule {
                 transitionType = transitionType,
                 start = start,

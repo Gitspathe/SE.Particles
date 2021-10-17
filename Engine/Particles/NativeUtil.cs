@@ -1,7 +1,7 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
-using SE.Engine.Utility;
+﻿using SE.Engine.Utility;
 using SE.Utility;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace SE.Particles
 {

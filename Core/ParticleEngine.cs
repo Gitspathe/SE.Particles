@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -16,7 +15,6 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework;
 #endif
 
-using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
 
 [assembly: InternalsVisibleTo("SE.Particles.Native")]
@@ -27,8 +25,8 @@ namespace SE.Core
         private static readonly QuickList<Emitter> emitters = new QuickList<Emitter>();
         private static readonly QuickList<Emitter> visibleEmitters = new QuickList<Emitter>();
         private static readonly QuickList<AreaModule> areaModules = new QuickList<AreaModule>();
-    
-    #if MONOGAME
+
+#if MONOGAME
         internal static GraphicsDevice GraphicsDevice;
         internal static Effect ParticleInstanceEffect;
 
@@ -36,24 +34,24 @@ namespace SE.Core
         public static bool UseParticleRenderer {
             get => useParticleRenderer;
             set {
-                if(GraphicsDevice == null || useParticleRenderer == value)
+                if (GraphicsDevice == null || useParticleRenderer == value)
                     return;
 
                 useParticleRenderer = value;
             }
         }
         private static bool useParticleRenderer = true;
-    #endif
+#endif
 
         public static bool NativeEnabled = false;
 
         internal static bool UseArrayPool => AllocationMode == ParticleAllocationMode.ArrayPool;
 
-        public static int ParticleCount { 
-            get  { 
+        public static int ParticleCount {
+            get {
                 int total = 0;
                 foreach (Emitter emitter in emitters) {
-                    if(emitter.Enabled)
+                    if (emitter.Enabled)
                         total += emitter.ActiveParticles.Length;
                 }
                 return total;
@@ -107,7 +105,7 @@ namespace SE.Core
         public static bool UseThreadPool {
             get => useThreadPool;
             set {
-                if(useThreadPool == value)
+                if (useThreadPool == value)
                     return;
 
                 if (updateTask != null && !updateTask.IsCompleted) {
@@ -126,7 +124,7 @@ namespace SE.Core
 
         /// <summary>Controls how the particle engine updates.</summary>
         public static UpdateMode UpdateMode = UpdateMode.ParallelAsynchronous;
-        
+
         public static bool Initialized { get; private set; }
 
         private static Vector4[] tmpViewArr = new Vector4[1];
@@ -135,13 +133,10 @@ namespace SE.Core
 
         private static QuickList<ParticleThread> threads;
 
-    #if MONOGAME
+#if MONOGAME
         public static void Initialize(GraphicsDevice graphicsDevice)
         {
-            if(graphicsDevice == null)
-                throw new ArgumentNullException(nameof(graphicsDevice));
-
-            GraphicsDevice = graphicsDevice;
+            GraphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
 
             // Disgusting reflection to determine shader profile.
             int val;
@@ -154,13 +149,21 @@ namespace SE.Core
                 throw new ParticleEngineInitializationException("Unable to read shader profile. MonoGame assembly could be incompatible or missing.");
             }
 
-            // 0 = OpenGL, 1 = DirectX.
-            if(val == 0) {
-                ParticleInstanceEffect = new Effect(graphicsDevice, File.ReadAllBytes("CompiledInstancingShaderOpenGL.mgfx"));
-            } else if(val == 1) {
-                ParticleInstanceEffect = new Effect(graphicsDevice, File.ReadAllBytes("CompiledInstancingShaderDirectX.mgfx"));
-            } else {
-                throw new ParticleEngineInitializationException($"Unable to initialize particle engine. Unrecognized shader profile '{val}'");
+            // Attempt to load required shader.
+            ShaderProfile detectedProfile = val == 0 ? ShaderProfile.OpenGL : ShaderProfile.DirectX;
+            // TODO: Look into why directX requires HiDef. Remove this check if I can remove that requirement.
+            if (detectedProfile == ShaderProfile.DirectX && graphicsDevice.GraphicsProfile != GraphicsProfile.HiDef)
+                throw new ParticleEngineInitializationException("DirectX particle renderer requires 'HiDef' graphics profile.");
+
+            switch (detectedProfile) {
+                case ShaderProfile.OpenGL:
+                    ParticleInstanceEffect = new Effect(graphicsDevice, File.ReadAllBytes("CompiledInstancingShaderOpenGL.mgfx"));
+                    break;
+                case ShaderProfile.DirectX:
+                    ParticleInstanceEffect = new Effect(graphicsDevice, File.ReadAllBytes("CompiledInstancingShaderDX.mgfx"));
+                    break;
+                default:
+                    throw new ParticleEngineInitializationException($"Unable to initialize particle engine. Unrecognized shader profile '{val}'");
             }
             ParticleInstanceEffect.CurrentTechnique = ParticleInstanceEffect.Techniques["ParticleInstancing"];
 
@@ -170,12 +173,12 @@ namespace SE.Core
 
             Initialized = true;
         }
-    #else
+#else
         public static void Initialize()
         {
             Initialized = true;
         }
-    #endif
+#endif
 
         /// <summary>
         /// Starts an update of the particle engine.
@@ -203,18 +206,20 @@ namespace SE.Core
             FindVisible(viewBounds);
 
             // If visible emitters is zero, there's nothing to do.
-            if(visibleEmitters.Count == 0) {
+            if (visibleEmitters.Count == 0) {
                 return;
             }
 
             switch (UpdateMode) {
                 case UpdateMode.ParallelAsynchronous: {
                     CreateTasks(deltaTime);
-                } break;
+                }
+                break;
                 case UpdateMode.ParallelSynchronous: {
                     CreateTasks(deltaTime);
                     WaitForThreads();
-                } break;
+                }
+                break;
                 case UpdateMode.Synchronous: {
                     // Update area modules.
                     foreach (AreaModule aMod in areaModules) {
@@ -234,7 +239,8 @@ namespace SE.Core
                     for (int i = 0; i < visibleEmitters.Count; i++) {
                         visibleEmitters.Array[i].Update(deltaTime);
                     }
-                } break;
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -278,7 +284,7 @@ namespace SE.Core
 
         private static Exception CheckForThreadException()
         {
-            if(UseThreadPool)
+            if (UseThreadPool)
                 return null;
 
             foreach (ParticleThread pt in threads) {
@@ -355,7 +361,7 @@ namespace SE.Core
 
                 // TODO: A better thread allocation method. Implement complexity values / load balancing.
                 // TODO: ALSO moving the game window, while the fps is high, causes the particle engine to deadlock. wtf.
-                
+
                 foreach (ParticleThread pt in threads) {
                     pt.NewFrame(deltaTime);
                 }
@@ -365,7 +371,7 @@ namespace SE.Core
                     threads.Array[curThread].AssignWork(e);
 
                     curThread++;
-                    if(curThread == threads.Count) {
+                    if (curThread == threads.Count) {
                         curThread = 0;
                     }
                 }
@@ -421,7 +427,7 @@ namespace SE.Core
 
         internal static void AddEmitter(Emitter emitter)
         {
-            if(emitter.ParticleEngineIndex != -1)
+            if (emitter.ParticleEngineIndex != -1)
                 return;
 
             emitter.ParticleEngineIndex = emitters.Count;
@@ -434,7 +440,7 @@ namespace SE.Core
 
         internal static void RemoveEmitter(Emitter emitter)
         {
-            if(emitter.ParticleEngineIndex == -1)
+            if (emitter.ParticleEngineIndex == -1)
                 return;
 
             emitters.Remove(emitter);
@@ -448,7 +454,7 @@ namespace SE.Core
 
         internal static void AddAreaModule(AreaModule module)
         {
-            if(module.AddedToEngine)
+            if (module.AddedToEngine)
                 return;
 
             module.AddedToEngine = true;
@@ -517,7 +523,7 @@ namespace SE.Core
 
             internal static void Get((byte, BlendMode) key, QuickList<Emitter> existing, SearchFlags search)
             {
-                if(sortedEmitters.TryGetValue(key, out EmitterContainer container)) {
+                if (sortedEmitters.TryGetValue(key, out EmitterContainer container)) {
                     container.Retrieve(existing, search);
                 }
             }
@@ -526,7 +532,7 @@ namespace SE.Core
             {
                 foreach (var pair in sortedEmitters) {
                     EmitterContainer container = pair.Value;
-                    if (!container.IsActive || container.Layer != layer) 
+                    if (!container.IsActive || container.Layer != layer)
                         continue;
 
                     container.Retrieve(existing, search);
@@ -537,14 +543,14 @@ namespace SE.Core
             {
                 foreach (var pair in sortedEmitters) {
                     EmitterContainer container = pair.Value;
-                    if (!container.IsActive || container.BlendMode != blendMode) 
+                    if (!container.IsActive || container.BlendMode != blendMode)
                         continue;
 
                     container.Retrieve(existing, search);
                 }
             }
 
-            internal static EmitterContainer GetContainer((byte, BlendMode) key) 
+            internal static EmitterContainer GetContainer((byte, BlendMode) key)
                 => sortedEmitters.TryGetValue(key, out EmitterContainer emitters) ? emitters : null;
 
             internal static void GetContainers(QuickList<EmitterContainer> existing)
@@ -579,13 +585,13 @@ namespace SE.Core
 
         private static bool CheckFlags(SearchFlags flags, Emitter e)
         {
-            if(flags == SearchFlags.None)
+            if (flags == SearchFlags.None)
                 return true;
-            if ((flags & SearchFlags.Enabled) != 0 && !e.Enabled) 
+            if ((flags & SearchFlags.Enabled) != 0 && !e.Enabled)
                 return false;
             if ((flags & SearchFlags.Visible) != 0 && !e.IsVisible)
                 return false;
-                
+
             return true;
         }
 
@@ -602,10 +608,10 @@ namespace SE.Core
             }
         }
 
-        internal void Clear() 
+        internal void Clear()
             => Emitters.Clear();
 
-        internal void Add(Emitter emitter) 
+        internal void Add(Emitter emitter)
             => Emitters.Add(emitter);
 
         internal void Remove(Emitter emitter)
@@ -616,7 +622,7 @@ namespace SE.Core
     {
         public ThreadState State { get; private set; }
         public Exception Exception { get; private set; }
-        
+
         private Thread thread;
         private AutoResetEvent resetEvent = new AutoResetEvent(false);
         private QuickList<Emitter> emitters = new QuickList<Emitter>();
@@ -624,9 +630,10 @@ namespace SE.Core
 
         public ParticleThread()
         {
-            thread = new Thread(Run);
-            thread.IsBackground = true;
-            thread.Name = "Particle Thread";
+            thread = new Thread(Run) {
+                IsBackground = true,
+                Name = "Particle Thread"
+            };
             thread.Start();
         }
 
@@ -680,7 +687,7 @@ namespace SE.Core
                     Exception = e;
                 }
 
-                if(State == ThreadState.Exception)
+                if (State == ThreadState.Exception)
                     break;
 
                 State = ThreadState.Idle;
@@ -750,5 +757,11 @@ namespace SE.Core
 
         /// <summary>Exceptions will be thrown whenever values are invalid. This is useful for debugging and fine-tuning particle emitters.</summary>
         Throw
+    }
+
+    internal enum ShaderProfile
+    {
+        OpenGL,
+        DirectX
     }
 }

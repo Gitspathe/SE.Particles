@@ -26,10 +26,10 @@ sampler2D TexSampler = sampler_state
 struct VSInstanceInputSimple
 {
     float3 InstancePosition : POSITION1;
+	float2 InstanceScale : POSITION2;
+	float InstanceRotation : POSITION3;
     float4 InstanceColor : COLOR1;
     float2 TexCoordOffset : TEXCOORD1;
-	float2 InstanceScale : POSITION2;
-    float InstanceRotation : POSITION3;
 };
 
 struct VSVertexInputSimple

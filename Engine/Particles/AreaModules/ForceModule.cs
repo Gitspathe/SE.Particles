@@ -1,6 +1,6 @@
-﻿using System;
+﻿using SE.Particles.Shapes;
+using System;
 using System.Numerics;
-using SE.Particles.Shapes;
 using static SE.Particles.ParticleMath;
 
 namespace SE.Particles.AreaModules
@@ -13,7 +13,7 @@ namespace SE.Particles.AreaModules
             set => maxDistance = Clamp(value, minDistance, float.MaxValue);
         }
         private float maxDistance = float.MaxValue;
-        
+
         /// <summary>Distance at which the force is at the highest intensity.</summary>
         public float MinDistance {
             get => minDistance;
@@ -45,12 +45,12 @@ namespace SE.Particles.AreaModules
         public Mode ForceMode = Mode.Attract;
 
         public ForceModule(IIntersectable shape, Vector2? position = null) : base(shape, position) { }
-        
+
         public override unsafe void ProcessParticles(float deltaTime, Particle* particles, int length)
         {
             Particle* tail = particles + length;
             for (Particle* particle = particles; particle < tail; particle++) {
-                if (!Shape.Intersects(particle->Position)) 
+                if (!Shape.Intersects(particle->Position))
                     continue;
 
                 float distance = (Position - particle->Position).Length();
@@ -60,7 +60,7 @@ namespace SE.Particles.AreaModules
                 float ratio = GetRatio(maxDistance, minDistance, distance);
                 float speedDelta = speedIncrease * ratio;
                 GetAngle(particle->Position, Position, out Vector2 direction, out float angle);
-                if(ForceMode == Mode.Repel)
+                if (ForceMode == Mode.Repel)
                     direction = -direction;
 
                 particle->Direction = Vector2.Lerp(particle->Direction, direction, ratio * intensity * deltaTime);
@@ -79,8 +79,8 @@ namespace SE.Particles.AreaModules
 #endif
         }
 
-        public static ForceModule Attract(IIntersectable shape, Vector2 position, float minDistance, float maxDistance, 
-            float intensity = 10.0f, float speedIncrease = 10.0f) 
+        public static ForceModule Attract(IIntersectable shape, Vector2 position, float minDistance, float maxDistance,
+            float intensity = 10.0f, float speedIncrease = 10.0f)
             => new ForceModule(shape) {
                 Position = position,
                 MaxDistance = maxDistance,
@@ -90,8 +90,8 @@ namespace SE.Particles.AreaModules
                 ForceMode = Mode.Attract
             };
 
-        public static ForceModule Repel(IIntersectable shape, Vector2 position, float minDistance, float maxDistance, 
-            float intensity = 10.0f, float speedIncrease = 10.0f) 
+        public static ForceModule Repel(IIntersectable shape, Vector2 position, float minDistance, float maxDistance,
+            float intensity = 10.0f, float speedIncrease = 10.0f)
             => new ForceModule(shape) {
                 Position = position,
                 MinDistance = minDistance,

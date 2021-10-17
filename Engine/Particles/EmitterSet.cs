@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using SE.Core;
+﻿using SE.Core;
 using SE.Utility;
+using System;
+using System.Collections.Generic;
 
 namespace SE.Particles
 {
@@ -40,13 +40,13 @@ namespace SE.Particles
             }
         }
 
-        public void Add(Emitter emitter) 
+        public void Add(Emitter emitter)
             => Emitters.Add(emitter);
 
-        public void Remove(Emitter emitter) 
+        public void Remove(Emitter emitter)
             => Emitters.Remove(emitter);
 
-        public void Clear() 
+        public void Clear()
             => Emitters.Clear();
 
         public EmitterSet DeepCopy()
@@ -65,7 +65,7 @@ namespace SE.Particles
 
         protected virtual void Dispose(bool disposing)
         {
-            if(isDisposed)
+            if (isDisposed)
                 return;
 
             foreach (IDisposable disposable in Emitters) {

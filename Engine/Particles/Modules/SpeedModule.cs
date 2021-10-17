@@ -1,8 +1,8 @@
-﻿using System;
+﻿using SE.Core;
+using SE.Utility;
+using System;
 using System.Runtime.InteropServices;
 using System.Security;
-using SE.Core;
-using SE.Utility;
 using Random = SE.Utility.Random;
 
 namespace SE.Particles.Modules
@@ -21,7 +21,7 @@ namespace SE.Particles.Modules
             }
         }
         private bool absoluteValue = false;
-        
+
         private float[] rand;
 
         private Transition transitionType;
@@ -68,7 +68,7 @@ namespace SE.Particles.Modules
 
         private void RegenerateRandom()
         {
-            if (!IsRandom || Emitter == null) 
+            if (!IsRandom || Emitter == null)
                 return;
 
             rand = new float[Emitter.ParticlesLength];
@@ -106,7 +106,8 @@ namespace SE.Particles.Modules
                             ? velocity
                             : particle->Speed + (velocity * deltaTime);
                     }
-                } break;
+                }
+                break;
                 case Transition.Curve: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         float velocity = curve.Evaluate(particle->TimeAlive / particle->InitialLife);
@@ -114,15 +115,17 @@ namespace SE.Particles.Modules
                             ? velocity
                             : particle->Speed + (velocity * deltaTime);
                     }
-                } break;
+                }
+                break;
                 case Transition.RandomCurve: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         float velocity = curve.Evaluate(rand[particle->ID]);
-                        particle->Speed = AbsoluteValue 
+                        particle->Speed = AbsoluteValue
                             ? velocity
                             : particle->Speed + (velocity * deltaTime);
                     }
-                } break;
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }

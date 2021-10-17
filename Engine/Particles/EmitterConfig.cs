@@ -18,9 +18,9 @@ namespace SE.Particles
         public SpeedConfig Speed;
         public EmissionConfig Emission;
 
-    #if MONOGAME
+#if MONOGAME
         public TextureConfig Texture;
-    #endif
+#endif
 
         protected Emitter Parent;
 
@@ -33,9 +33,9 @@ namespace SE.Particles
             Speed = new SpeedConfig(parent);
             Emission = new EmissionConfig(parent);
 
-        #if MONOGAME
+#if MONOGAME
             Texture = new TextureConfig(parent);
-        #endif
+#endif
         }
 
         internal void SetParent(Emitter newParent)
@@ -47,9 +47,9 @@ namespace SE.Particles
             Speed.SetParent(newParent);
             Emission.SetParent(newParent);
 
-        #if MONOGAME
+#if MONOGAME
             Texture.SetParent(newParent);
-        #endif
+#endif
         }
 
         public abstract class EmitterConfigCollection
@@ -70,22 +70,22 @@ namespace SE.Particles
         public class ColorConfig : EmitterConfigCollection
         {
             internal StartingValue StartValueType;
-            internal Vector4 Min, Max;
+            internal ParticleColor Min, Max;
             internal Curve4 Curve;
 
             internal ColorConfig(Emitter parent) : base(parent)
             {
-                Min = new Vector4(0, 1.0f, 1.0f, 1.0f);
+                Min = new ParticleColor(0, 0f, 0f, 0f);
                 StartValueType = StartingValue.Normal;
             }
 
-            public void SetNormal(Vector4 value)
+            public void SetNormal(ParticleColor value)
             {
                 Min = value;
                 StartValueType = StartingValue.Normal;
             }
 
-            public void SetRandomBetween(Vector4 min, Vector4 max)
+            public void SetRandomBetween(ParticleColor min, ParticleColor max)
             {
                 Min = min;
                 Max = max;
@@ -164,7 +164,7 @@ namespace SE.Particles
                 StartValueType = StartingValue.RandomCurve;
             }
 
-            public ScaleConfig DeepCopy() 
+            public ScaleConfig DeepCopy()
                 => new ScaleConfig(Parent) {
                     StartValueType = StartValueType,
                     Min = Min,
@@ -212,7 +212,7 @@ namespace SE.Particles
                 maxLife = maxFound;
             }
 
-            public LifeConfig DeepCopy() 
+            public LifeConfig DeepCopy()
                 => new LifeConfig(Parent) {
                     StartValueType = StartValueType,
                     Min = Min,
@@ -248,7 +248,7 @@ namespace SE.Particles
                 StartValueType = StartingValue.RandomCurve;
             }
 
-            public SpeedConfig DeepCopy() 
+            public SpeedConfig DeepCopy()
                 => new SpeedConfig(Parent) {
                     StartValueType = StartValueType,
                     Min = Min,
@@ -257,7 +257,7 @@ namespace SE.Particles
                 };
         }
 
-    #if MONOGAME
+#if MONOGAME
         public class TextureConfig : EmitterConfigCollection
         {
             internal TextureStartingValue StartingValue;
@@ -305,7 +305,7 @@ namespace SE.Particles
                 Parent.Renderer?.OnParticleSizeChanged();
             }
 
-            public TextureConfig DeepCopy() => 
+            public TextureConfig DeepCopy() =>
                 new TextureConfig(Parent) {
                     StartingValue = StartingValue,
                     Texture = Texture,
@@ -352,7 +352,7 @@ namespace SE.Particles
 
             public void SetCurve(Curve curve)
             {
-                if(curve == null || curve.Keys.Count == 0) {
+                if (curve == null || curve.Keys.Count == 0) {
                     EmissionType = EmissionType.None;
                     return;
                 }
@@ -393,7 +393,7 @@ namespace SE.Particles
             Sheet
         }
 
-        public EmitterConfig DeepCopy() 
+        public EmitterConfig DeepCopy()
             => new EmitterConfig(Parent) {
                 Color = Color.DeepCopy(),
                 Life = Life.DeepCopy(),

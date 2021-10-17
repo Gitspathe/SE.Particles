@@ -1,9 +1,7 @@
-﻿using System;
-using System.Numerics;
-using SE.Core;
-using SE.Core.Extensions;
+﻿using SE.Core.Extensions;
 using SE.Utility;
-using Random = SE.Utility.Random;
+using System;
+using System.Numerics;
 using static SE.Particles.ParticleMath;
 
 namespace SE.Particles.Shapes
@@ -60,9 +58,9 @@ namespace SE.Particles.Shapes
             circleDistance.X = Math.Abs(Center.X - bounds.X);
             circleDistance.Y = Math.Abs(Center.Y - bounds.Y);
 
-            if (circleDistance.X > (bounds.Z/2 + radius) || circleDistance.Y > (bounds.W/2 + radius)) 
+            if (circleDistance.X > (bounds.Z / 2 + radius) || circleDistance.Y > (bounds.W / 2 + radius))
                 return false;
-            if (circleDistance.X <= (bounds.Z/2) || circleDistance.Y <= (bounds.W/2)) 
+            if (circleDistance.X <= (bounds.Z / 2) || circleDistance.Y <= (bounds.W / 2))
                 return true;
 
             float foo = (circleDistance.X - bounds.Z / 2) * (circleDistance.X - bounds.Z / 2);
@@ -79,7 +77,7 @@ namespace SE.Particles.Shapes
         public bool EdgeOnly;
         public bool Uniform;
 
-        public CircleEmitterShape(float radius, EmissionDirection direction = EmissionDirection.None, 
+        public CircleEmitterShape(float radius, EmissionDirection direction = EmissionDirection.None,
             bool edgeOnly = false, bool uniform = false, float angleRatio = 1.0f) : base(radius, angleRatio)
         {
             Direction = direction;
@@ -90,14 +88,14 @@ namespace SE.Particles.Shapes
         public void Get(float uniformRatio, out Vector2 position, out Vector2 velocity, FRandom random)
         {
             float rotation;
-            float distance = EdgeOnly 
-                ? Radius 
+            float distance = EdgeOnly
+                ? Radius
                 : random.NextSingle(0.0f, Radius);
 
             if (IsFullCircle) {
                 // Optimized algorithm for full 360 degree circle.
                 rotation = Uniform
-                    ? Between(-_PI, _PI, uniformRatio) 
+                    ? Between(-_PI, _PI, uniformRatio)
                     : random.NextAngle();
             } else {
                 // Slower algorithm for semicircles.

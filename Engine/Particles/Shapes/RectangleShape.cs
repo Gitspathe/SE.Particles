@@ -1,12 +1,8 @@
-﻿using System;
-using System.Numerics;
-using SE.Core;
+﻿using SE.Core.Extensions;
+using SE.Utility;
 using static SE.Particles.ParticleMath;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
-using Random = SE.Utility.Random;
-using SE.Core.Extensions;
-using SE.Utility;
 
 namespace SE.Particles.Shapes
 {
@@ -43,7 +39,7 @@ namespace SE.Particles.Shapes
             Size = size;
         }
 
-        private void UpdateBounds() 
+        private void UpdateBounds()
             => Bounds = new Vector4(center.X - (size.X / 2.0f), center.Y - (size.Y / 2.0f), size.X, size.Y);
 
         public bool Intersects(Vector2 point)
@@ -61,7 +57,7 @@ namespace SE.Particles.Shapes
 
         public RectangleEmitterShape() { }
 
-        public RectangleEmitterShape(Vector2 size, EmissionDirection direction = EmissionDirection.None, 
+        public RectangleEmitterShape(Vector2 size, EmissionDirection direction = EmissionDirection.None,
             bool edgeOnly = false, bool uniform = false) : base(size)
         {
             Direction = direction;
@@ -80,7 +76,7 @@ namespace SE.Particles.Shapes
 
             // Continue if the emission is edge only.
             float totalLength = (Bounds.Z * 2.0f) + (Bounds.W * 2.0f);
-            float len = Uniform 
+            float len = Uniform
                 ? uniformRatio * totalLength
                 : random.NextSingle(totalLength);
 

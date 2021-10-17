@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Numerics;
-using SE.Core;
+﻿using SE.Core;
 using SE.Particles.Shapes;
+using System.Collections.Generic;
+using System.Numerics;
 
 namespace SE.Particles.AreaModules
 {
@@ -51,7 +51,7 @@ namespace SE.Particles.AreaModules
 
         internal HashSet<Emitter> GetEmitters()
         {
-            lock(AttachedEmitters)
+            lock (AttachedEmitters)
                 return AttachedEmitters;
         }
 

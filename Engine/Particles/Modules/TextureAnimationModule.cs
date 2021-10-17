@@ -1,10 +1,8 @@
-﻿using System;
-using System.Numerics;
+﻿using SE.Core;
+using System;
 using System.Runtime.InteropServices;
 using System.Security;
-using SE.Core;
 using static SE.Particles.ParticleMath;
-using Vector4 = System.Numerics.Vector4;
 
 namespace SE.Particles.Modules
 {
@@ -24,7 +22,7 @@ namespace SE.Particles.Modules
 
         private void ApplyToEmitter()
         {
-            if(Emitter == null)
+            if (Emitter == null)
                 return;
 
             //Emitter.ParticleSize = new Int2(
@@ -56,30 +54,32 @@ namespace SE.Particles.Modules
 
             Particle* tail = arrayPtr + length;
             int totalFrames = SheetRows * SheetColumns;
-            int frameSize = (int) Emitter.Config.Texture.FullTextureSize.X / SheetRows;
+            int frameSize = (int)Emitter.Config.Texture.FullTextureSize.X / SheetRows;
             switch (loopMode) {
                 case LoopMode.Life: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
-                        int frame = (int) Between(0.0f, totalFrames, particle->TimeAlive / particle->InitialLife);
+                        int frame = (int)Between(0.0f, totalFrames, particle->TimeAlive / particle->InitialLife);
 #if NETSTANDARD2_1
                         int frameX = (int) MathF.Floor(frame % SheetRows);
                         int frameY = (int) MathF.Floor(frame / SheetRows);
 #else
-                        int frameX = (int) Math.Floor((double) frame % SheetRows);
-                        int frameY = (int) Math.Floor((double) frame / SheetRows);
+                        int frameX = (int)Math.Floor((double)frame % SheetRows);
+                        int frameY = (int)Math.Floor((double)frame / SheetRows);
 #endif
                         particle->SourceRectangle = new Int4(
-                             frameX * frameSize, 
-                             frameY * frameSize, 
-                             frameSize, 
+                             frameX * frameSize,
+                             frameY * frameSize,
+                             frameSize,
                              frameSize);
                     }
-                } break;
+                }
+                break;
                 case LoopMode.Loop: {
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         // TODO:
-                    } 
-                } break;
+                    }
+                }
+                break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
