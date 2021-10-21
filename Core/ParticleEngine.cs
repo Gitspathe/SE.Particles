@@ -155,12 +155,14 @@ namespace SE.Core
             if (detectedProfile == ShaderProfile.DirectX && graphicsDevice.GraphicsProfile != GraphicsProfile.HiDef)
                 throw new ParticleEngineInitializationException("DirectX particle renderer requires 'HiDef' graphics profile.");
 
+            string openGLShaderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CompiledInstancingShaderOpenGL.mgfx");
+            string directXShaderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CompiledInstancingShaderDX.mgfx");
             switch (detectedProfile) {
                 case ShaderProfile.OpenGL:
-                    ParticleInstanceEffect = new Effect(graphicsDevice, File.ReadAllBytes("CompiledInstancingShaderOpenGL.mgfx"));
+                    ParticleInstanceEffect = new Effect(graphicsDevice, File.ReadAllBytes(openGLShaderPath));
                     break;
                 case ShaderProfile.DirectX:
-                    ParticleInstanceEffect = new Effect(graphicsDevice, File.ReadAllBytes("CompiledInstancingShaderDX.mgfx"));
+                    ParticleInstanceEffect = new Effect(graphicsDevice, File.ReadAllBytes(directXShaderPath));
                     break;
                 default:
                     throw new ParticleEngineInitializationException($"Unable to initialize particle engine. Unrecognized shader profile '{val}'");
