@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Numerics;
 using SE.Core;
 using Vector2 = System.Numerics.Vector2;
@@ -101,14 +101,14 @@ namespace SE.Particles
                         data->TextureCoordOffset = new Vector2(p->SourceRectangle.X, p->SourceRectangle.Y) / emitter.Config.Texture.FullTextureSize;
 
                         // If we are running modern .net, use a fast MemoryCopy. Otherwise, manually copy over data.
-                    #if NETSTANDARD2_0_OR_GREATER
+#if NETSTANDARD2_0_OR_GREATER
                         Buffer.MemoryCopy(p, data, InstanceData._SIZE_IN_BYTES, Particle._RENDER_SIZE);
-                    #else
+#else
                         data->InstanceScale = p->Scale;
                         data->InstanceRotation = p->SpriteRotation;
                         data->InstancePosition = p->Position;
                         data->InstanceColor = p->Color;
-                    #endif
+#endif
                     }
                 }
             }

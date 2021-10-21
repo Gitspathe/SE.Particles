@@ -1,4 +1,4 @@
-﻿using SE.Core.Extensions;
+using SE.Core.Extensions;
 using SE.Utility;
 using System;
 using System.Numerics;

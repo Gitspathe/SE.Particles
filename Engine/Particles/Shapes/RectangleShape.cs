@@ -1,4 +1,4 @@
-﻿using SE.Core.Extensions;
+using SE.Core.Extensions;
 using SE.Utility;
 using static SE.Particles.ParticleMath;
 using Vector2 = System.Numerics.Vector2;

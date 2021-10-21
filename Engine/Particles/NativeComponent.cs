@@ -1,4 +1,4 @@
-﻿using SE.Particles.Modules;
+using SE.Particles.Modules;
 using System;
 using System.Runtime.InteropServices;
 using System.Security;

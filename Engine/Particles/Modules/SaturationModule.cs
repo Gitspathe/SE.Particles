@@ -1,4 +1,4 @@
-﻿using SE.Core;
+using SE.Core;
 using SE.Utility;
 using System;
 using System.Runtime.InteropServices;

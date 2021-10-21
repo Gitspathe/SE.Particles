@@ -1,4 +1,4 @@
-﻿namespace SE.Particles
+namespace SE.Particles
 {
     /// <summary>
     /// Represents additional data for an emitter.

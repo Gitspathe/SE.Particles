@@ -1,4 +1,4 @@
-﻿using SE.Core.Extensions;
+using SE.Core.Extensions;
 using SE.Utility;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;

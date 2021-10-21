@@ -1,4 +1,4 @@
-﻿using SE.Core;
+using SE.Core;
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -60,8 +60,8 @@ namespace SE.Particles.Modules
                     for (Particle* particle = arrayPtr; particle < tail; particle++) {
                         int frame = (int)Between(0.0f, totalFrames, particle->TimeAlive / particle->InitialLife);
 #if NETSTANDARD2_1
-                        int frameX = (int) MathF.Floor(frame % SheetRows);
-                        int frameY = (int) MathF.Floor(frame / SheetRows);
+                        int frameX = (int)MathF.Floor(frame % SheetRows);
+                        int frameY = (int)MathF.Floor(frame / SheetRows);
 #else
                         int frameX = (int)Math.Floor((double)frame % SheetRows);
                         int frameY = (int)Math.Floor((double)frame / SheetRows);

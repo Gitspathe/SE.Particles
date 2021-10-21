@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Vector4 = System.Numerics.Vector4;
 
 #if MONOGAME

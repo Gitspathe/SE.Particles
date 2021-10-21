@@ -1,4 +1,4 @@
-﻿using SE.Core;
+using SE.Core;
 using SE.Engine.Utility;
 using SE.Utility;
 using System;

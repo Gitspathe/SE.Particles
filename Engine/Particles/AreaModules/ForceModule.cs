@@ -1,4 +1,4 @@
-﻿using SE.Particles.Shapes;
+using SE.Particles.Shapes;
 using System;
 using System.Numerics;
 using static SE.Particles.ParticleMath;

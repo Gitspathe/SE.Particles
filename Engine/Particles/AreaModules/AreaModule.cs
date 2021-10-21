@@ -1,4 +1,4 @@
-﻿using SE.Core;
+using SE.Core;
 using SE.Particles.Shapes;
 using System.Collections.Generic;
 using System.Numerics;
