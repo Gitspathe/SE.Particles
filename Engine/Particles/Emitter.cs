@@ -49,6 +49,18 @@ namespace SE.Particles
 
         private object collectionLock = new object();
 
+        public float PlaybackRate {
+            get => playbackRate;
+            set {
+                if(value < 0.0f) {
+                    value = 0.0f;
+                }
+
+                playbackRate = value;
+            }
+        }
+        private float playbackRate = 1.0f;
+
         public BlendMode BlendMode {
             get => blendMode;
             set {
@@ -252,6 +264,7 @@ namespace SE.Particles
             //
             // Alternatively there could be something like a newModules collection, which replaces the real modules collection
             // at the end of every frame, where AddModule() actually adds to newModules.
+            deltaTime *= playbackRate;
             lock (collectionLock) {
                 UpdateInternal(deltaTime);
             }
