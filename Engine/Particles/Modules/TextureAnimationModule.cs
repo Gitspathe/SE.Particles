@@ -7,7 +7,7 @@ using static SE.Particles.ParticleMath;
 namespace SE.Particles.Modules
 {
     [SuppressUnmanagedCodeSecurity]
-    public unsafe class TextureAnimationModule : NativeParticleModule
+    public unsafe class TextureAnimationModule : ParticleModule
     {
         public int SheetRows;
         public int SheetColumns;
@@ -17,7 +17,6 @@ namespace SE.Particles.Modules
 
         public TextureAnimationModule()
         {
-            SubmodulePtr = nativeModule_TextureAnimationModule_Ctor();
         }
 
         private void ApplyToEmitter()
@@ -35,8 +34,6 @@ namespace SE.Particles.Modules
             SheetRows = sheetRows;
             SheetColumns = sheetColumns;
             ApplyToEmitter();
-
-            nativeModule_TextureAnimationModule_SetOverLifetime(SubmodulePtr, sheetRows, sheetColumns);
         }
 
         public override void OnInitialize()
@@ -47,11 +44,6 @@ namespace SE.Particles.Modules
 
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
-            if (ParticleEngine.NativeEnabled) {
-                nativeModule_TextureAnimationModule_SetTextureSize(SubmodulePtr, new NativeVector2(Emitter.Config.Texture.FullTextureSize));
-                return;
-            }
-
             Particle* tail = arrayPtr + length;
             int totalFrames = SheetRows * SheetColumns;
             int frameSize = (int)Emitter.Config.Texture.FullTextureSize.X / SheetRows;
@@ -106,12 +98,5 @@ namespace SE.Particles.Modules
             Life,
             Loop
         }
-
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern Submodule* nativeModule_TextureAnimationModule_Ctor();
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_TextureAnimationModule_SetTextureSize(Submodule* modulePtr, NativeVector2 textureSize);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_TextureAnimationModule_SetOverLifetime(Submodule* modulePtr, int sheetRows, int sheetColumns);
     }
 }

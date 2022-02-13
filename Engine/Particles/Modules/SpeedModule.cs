@@ -8,7 +8,7 @@ using Random = SE.Utility.Random;
 namespace SE.Particles.Modules
 {
     [SuppressUnmanagedCodeSecurity]
-    public unsafe class SpeedModule : NativeParticleModule
+    public unsafe class SpeedModule : ParticleModule
     {
         public bool AbsoluteValue {
             get => absoluteValue;
@@ -17,7 +17,6 @@ namespace SE.Particles.Modules
                     return;
 
                 absoluteValue = value;
-                nativeModule_SpeedModule_SetAbsoluteValue(SubmodulePtr, value);
             }
         }
         private bool absoluteValue = false;
@@ -32,7 +31,6 @@ namespace SE.Particles.Modules
 
         public SpeedModule()
         {
-            SubmodulePtr = nativeModule_SpeedModule_Ctor();
         }
 
         public void SetLerp(float start, float end)
@@ -40,16 +38,12 @@ namespace SE.Particles.Modules
             this.start = start;
             this.end = end;
             transitionType = Transition.Lerp;
-
-            nativeModule_SpeedModule_SetLerp(SubmodulePtr, start, end);
         }
 
         public void SetCurve(Curve curve)
         {
             this.curve = curve;
             transitionType = Transition.Curve;
-
-            nativeModule_SpeedModule_SetCurve(SubmodulePtr, NativeUtil.CopyCurveToNativeCurve(curve));
         }
 
         public void SetRandomCurve(Curve curve)
@@ -57,8 +51,6 @@ namespace SE.Particles.Modules
             this.curve = curve;
             transitionType = Transition.RandomCurve;
             RegenerateRandom();
-
-            nativeModule_SpeedModule_SetRandomCurve(SubmodulePtr, NativeUtil.CopyCurveToNativeCurve(curve));
         }
 
         public override void OnInitialize()
@@ -76,10 +68,6 @@ namespace SE.Particles.Modules
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            if (ParticleEngine.NativeEnabled) {
-                return;
-            }
-
             if (!IsRandom)
                 return;
 
@@ -93,10 +81,6 @@ namespace SE.Particles.Modules
 
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
-            if (ParticleEngine.NativeEnabled) {
-                return;
-            }
-
             Particle* tail = arrayPtr + length;
             switch (transitionType) {
                 case Transition.Lerp: {
@@ -166,21 +150,5 @@ namespace SE.Particles.Modules
             Curve,
             RandomCurve
         }
-
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern Submodule* nativeModule_SpeedModule_Ctor();
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.I1)]
-        internal static extern bool nativeModule_SpeedModule_GetAbsoluteValue(Submodule* modulePtr);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_SpeedModule_SetAbsoluteValue(Submodule* modulePtr, bool val);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_SpeedModule_SetNone(Submodule* modulePtr);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_SpeedModule_SetLerp(Submodule* modulePtr, float start, float end);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_SpeedModule_SetCurve(Submodule* modulePtr, NativeCurve* curvePtr);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_SpeedModule_SetRandomCurve(Submodule* modulePtr, NativeCurve* curvePtr);
     }
 }

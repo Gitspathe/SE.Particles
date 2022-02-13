@@ -130,7 +130,6 @@ namespace SE.Particles
 
         public Vector4 Bounds { get; private set; }
         public ParticleRendererBase Renderer { get; private set; }
-        public NativeComponent NativeComponent { get; private set; }
 
         /// <summary>Controls whether or not the emitter will emit new particles.</summary>
         public bool EmissionEnabled { get; set; } = true;
@@ -192,8 +191,6 @@ namespace SE.Particles
                 SetRenderer(new InstancedParticleRenderer());
 #endif
             }
-
-            NativeComponent = new NativeComponent(this);
         }
 
         /// <summary>
@@ -288,9 +285,6 @@ namespace SE.Particles
             for (int i = 0; i < modules.Count; i++) {
                 modulesArr[i].OnParticlesActivated(NewParticleIndexes);
             }
-            if (ParticleEngine.NativeEnabled) {
-                NativeComponent.OnParticlesActivated(NewParticleIndexes);
-            }
 
             numNew = 0;
             fixed (Particle* ptr = Particles) {
@@ -311,9 +305,6 @@ namespace SE.Particles
                         continue;
 
                     modulesArr[i].OnUpdate(deltaTime, ptr, NumActive);
-                }
-                if (ParticleEngine.NativeEnabled) {
-                    NativeComponent.OnUpdate(deltaTime, ptr, NumActive);
                 }
 
                 // Update the area modules influencing this emitter.
@@ -722,10 +713,6 @@ namespace SE.Particles
                 modules.Add(module);
                 module.Emitter = this;
                 module.OnInitialize();
-                if (module is NativeParticleModule nativeModule) {
-                    NativeComponent.AddSubmodule(nativeModule);
-                    NativeComponent.InitializeSubmodule(nativeModule, ParticlesLength);
-                }
             }
         }
 

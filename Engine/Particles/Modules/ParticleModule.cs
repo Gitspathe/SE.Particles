@@ -47,21 +47,4 @@ namespace SE.Particles.Modules
         /// <returns>A deep copy.</returns>
         public abstract ParticleModule DeepCopy();
     }
-
-    [SuppressUnmanagedCodeSecurity]
-    public abstract unsafe class NativeParticleModule : ParticleModule, IDisposable
-    {
-        public Submodule* SubmodulePtr { get; protected set; }
-
-        public void Dispose()
-        {
-            Emitter.NativeComponent.RemoveSubmodule(this);
-        }
-    }
-
-    public enum ModuleMode
-    {
-        Managed,
-        Native
-    }
 }

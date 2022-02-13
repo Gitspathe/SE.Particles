@@ -9,7 +9,7 @@ using Random = SE.Utility.Random;
 namespace SE.Particles.Modules
 {
     [SuppressUnmanagedCodeSecurity]
-    public unsafe class AlphaModule : NativeParticleModule
+    public unsafe class AlphaModule : ParticleModule
     {
         private float[] startAlphas;
         private float[] randEndAlphas;
@@ -23,23 +23,18 @@ namespace SE.Particles.Modules
 
         protected AlphaModule()
         {
-            SubmodulePtr = nativeModule_AlphaModule_Ctor();
         }
 
         public void SetLerp(float end)
         {
             end1 = end;
             transitionType = Transition.Lerp;
-
-            nativeModule_AlphaModule_SetLerp(SubmodulePtr, end);
         }
 
         public void SetCurve(Curve curve)
         {
             this.curve = curve;
             transitionType = Transition.Curve;
-
-            nativeModule_AlphaModule_SetCurve(SubmodulePtr, NativeUtil.CopyCurveToNativeCurve(curve));
         }
 
         public void SetRandomLerp(float min, float max)
@@ -51,8 +46,6 @@ namespace SE.Particles.Modules
             end2 = max;
             transitionType = Transition.RandomLerp;
             RegenerateRandom();
-
-            nativeModule_AlphaModule_SetRandomLerp(SubmodulePtr, min, max);
         }
 
         public override ParticleModule DeepCopy()
@@ -79,10 +72,6 @@ namespace SE.Particles.Modules
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            if (ParticleEngine.NativeEnabled) {
-                return;
-            }
-
             fixed (Particle* particleArr = Emitter.Particles) {
                 for (int i = 0; i < particlesIndex.Length; i++) {
                     Particle* particle = &particleArr[particlesIndex[i]];
@@ -97,10 +86,6 @@ namespace SE.Particles.Modules
 
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
-            if (ParticleEngine.NativeEnabled) {
-                return;
-            }
-
             Particle* tail = arrayPtr + length;
             int i = 0;
 
@@ -156,16 +141,5 @@ namespace SE.Particles.Modules
             Curve,
             RandomLerp
         }
-
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern Submodule* nativeModule_AlphaModule_Ctor();
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_AlphaModule_SetNone(Submodule* modulePtr);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_AlphaModule_SetLerp(Submodule* modulePtr, float end);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_AlphaModule_SetRandomLerp(Submodule* modulePtr, float min, float max);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_AlphaModule_SetCurve(Submodule* modulePtr, NativeCurve* curvePtr);
     }
 }

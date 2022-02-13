@@ -43,8 +43,6 @@ namespace SE.Core
         private static bool useParticleRenderer = true;
 #endif
 
-        public static bool NativeEnabled = false;
-
         internal static bool UseArrayPool => AllocationMode == ParticleAllocationMode.ArrayPool;
 
         public static int ParticleCount {

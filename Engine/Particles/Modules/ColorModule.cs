@@ -10,7 +10,7 @@ using Random = SE.Utility.Random;
 namespace SE.Particles.Modules
 {
     [SuppressUnmanagedCodeSecurity]
-    public unsafe class ColorModule : NativeParticleModule
+    public unsafe class ColorModule : ParticleModule
     {
         private ParticleColor[] startColors;
         private ParticleColor[] randEndColors;
@@ -24,15 +24,12 @@ namespace SE.Particles.Modules
 
         public ColorModule()
         {
-            SubmodulePtr = nativeModule_ColorModule_Ctor();
         }
 
         public void SetLerp(ParticleColor end)
         {
             end1 = end;
             transitionType = Transition.Lerp;
-
-            //nativeModule_ColorModule_SetLerp(SubmodulePtr, new NativeVector4(end));
         }
 
         public void SetCurve(Curve h, Curve s, Curve l, Curve a)
@@ -42,8 +39,6 @@ namespace SE.Particles.Modules
             curveL = l;
             curveA = a;
             transitionType = Transition.Curve;
-
-            nativeModule_ColorModule_SetCurve(SubmodulePtr, NativeUtil.CopyCurve4ToNativeCurve4(h, s, l, a));
         }
 
         public void SetRandomLerp(ParticleColor min, ParticleColor max)
@@ -60,8 +55,6 @@ namespace SE.Particles.Modules
             end1 = min;
             end2 = max;
             transitionType = Transition.RandomLerp;
-
-            //nativeModule_ColorModule_SetRandomLerp(SubmodulePtr, new NativeVector4(min), new NativeVector4(max));
         }
 
         public override ParticleModule DeepCopy()
@@ -91,10 +84,6 @@ namespace SE.Particles.Modules
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            if (ParticleEngine.NativeEnabled) {
-                return;
-            }
-
             fixed (Particle* particleArr = Emitter.Particles) {
                 for (int i = 0; i < particlesIndex.Length; i++) {
                     Particle* particle = &particleArr[particlesIndex[i]];
@@ -113,10 +102,6 @@ namespace SE.Particles.Modules
 
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
-            if (ParticleEngine.NativeEnabled) {
-                return;
-            }
-
             Particle* tail = arrayPtr + length;
 
             switch (transitionType) {
@@ -182,16 +167,5 @@ namespace SE.Particles.Modules
             Curve,
             RandomLerp
         }
-
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern Submodule* nativeModule_ColorModule_Ctor();
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_ColorModule_SetNone(Submodule* modulePtr);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_ColorModule_SetLerp(Submodule* modulePtr, NativeVector4 end);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_ColorModule_SetRandomLerp(Submodule* modulePtr, NativeVector4 min, NativeVector4 max);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_ColorModule_SetCurve(Submodule* modulePtr, NativeCurve4* curvePtr);
     }
 }

@@ -9,7 +9,7 @@ using Random = SE.Utility.Random;
 namespace SE.Particles.Modules
 {
     [SuppressUnmanagedCodeSecurity]
-    public unsafe class SpriteRotationModule : NativeParticleModule
+    public unsafe class SpriteRotationModule : ParticleModule
     {
         private float[] rand;
 
@@ -22,15 +22,12 @@ namespace SE.Particles.Modules
 
         public SpriteRotationModule()
         {
-            SubmodulePtr = nativeModule_SpriteRotationModule_Ctor();
         }
 
         public void SetConstant(float val)
         {
             start = val;
             transitionType = TransitionType.Constant;
-
-            nativeModule_SpriteRotationModule_SetConstant(SubmodulePtr, val);
         }
 
         public void SetLerp(float start, float end)
@@ -38,16 +35,12 @@ namespace SE.Particles.Modules
             this.start = start;
             this.end = end;
             transitionType = TransitionType.Lerp;
-
-            nativeModule_SpriteRotationModule_SetLerp(SubmodulePtr, start, end);
         }
 
         public void SetCurve(Curve curve)
         {
             this.curve = curve;
             transitionType = TransitionType.Curve;
-
-            nativeModule_SpriteRotationModule_SetCurve(SubmodulePtr, NativeUtil.CopyCurveToNativeCurve(curve));
         }
 
         public void SetRandomConstant(float min, float max)
@@ -59,8 +52,6 @@ namespace SE.Particles.Modules
             end = max;
             transitionType = TransitionType.RandomConstant;
             RegenerateRandom();
-
-            nativeModule_SpriteRotationModule_SetRandomConstant(SubmodulePtr, min, max);
         }
 
         public void SetRandomCurve(Curve curve)
@@ -68,8 +59,6 @@ namespace SE.Particles.Modules
             this.curve = curve;
             transitionType = TransitionType.RandomCurve;
             RegenerateRandom();
-
-            nativeModule_SpriteRotationModule_SetRandomCurve(SubmodulePtr, NativeUtil.CopyCurveToNativeCurve(curve));
         }
 
         public override void OnInitialize()
@@ -87,10 +76,6 @@ namespace SE.Particles.Modules
 
         public override void OnParticlesActivated(Span<int> particlesIndex)
         {
-            if (ParticleEngine.NativeEnabled) {
-                return;
-            }
-
             if (!IsRandom)
                 return;
 
@@ -104,10 +89,6 @@ namespace SE.Particles.Modules
 
         public override void OnUpdate(float deltaTime, Particle* arrayPtr, int length)
         {
-            if (ParticleEngine.NativeEnabled) {
-                return;
-            }
-
             Particle* tail = arrayPtr + length;
 
             switch (transitionType) {
@@ -204,20 +185,5 @@ namespace SE.Particles.Modules
             RandomConstant,
             RandomCurve
         }
-
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern Submodule* nativeModule_SpriteRotationModule_Ctor();
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_SpriteRotationModule_SetNone(Submodule* modulePtr);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_SpriteRotationModule_SetConstant(Submodule* modulePtr, float val);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_SpriteRotationModule_SetLerp(Submodule* modulePtr, float start, float end);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_SpriteRotationModule_SetCurve(Submodule* modulePtr, NativeCurve* curvePtr);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_SpriteRotationModule_SetRandomConstant(Submodule* modulePtr, float min, float max);
-        [DllImport("SE.Native", CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void nativeModule_SpriteRotationModule_SetRandomCurve(Submodule* modulePtr, NativeCurve* curvePtr);
     }
 }
