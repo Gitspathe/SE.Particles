@@ -79,18 +79,6 @@ namespace SE.Core
         }
         private static ParticleAllocationMode allocationMode = ParticleAllocationMode.ArrayPool;
 
-        /// <summary>Controls how the particle engine handles minor exceptions. Cannot be changed after Initialize() has been called.</summary>
-        public static ErrorHandling ErrorHandling {
-            get => errorHandling;
-            set {
-                if (Initialized)
-                    throw new InvalidOperationException("Cannot change error handling mode after the particle engine has been initialized.");
-
-                errorHandling = value;
-            }
-        }
-        private static ErrorHandling errorHandling = ErrorHandling.Stability;
-
         /// <summary>Maximum time delta the emission rate will be clamped to. Increases stability when the frame-rate is unstable.</summary>
         public static float MaxEmissionTimeStep {
             get => maxEmissionTimeStep;
@@ -744,19 +732,6 @@ namespace SE.Core
         /// <summary>Update is done synchronously on a single thread. Results in lower performance on machines with
         ///          >2 cores, and potentially better performance on machines with 1-2 cores.</summary>
         Synchronous
-    }
-
-    /// <summary>
-    /// Controls how the particle engine handles certain exceptions.
-    /// </summary>
-    public enum ErrorHandling
-    {
-        /// <summary>The Engine will prioritize stability, and will attempt to correct certain exceptions. Exceptions related to emitter
-        ///          values, such as invalid bounds, will not be thrown. Exceptions that can't be corrected will still be thrown.</summary>
-        Stability,
-
-        /// <summary>Exceptions will be thrown whenever values are invalid. This is useful for debugging and fine-tuning particle emitters.</summary>
-        Throw
     }
 
     internal enum ShaderProfile

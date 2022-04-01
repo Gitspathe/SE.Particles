@@ -12,6 +12,7 @@ using SE.Utility;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
 using static SE.Particles.ParticleMath;
+using System.Diagnostics;
 
 #if MONOGAME
 using Microsoft.Xna.Framework;
@@ -90,25 +91,8 @@ namespace SE.Particles
         public Vector2 BoundsSize {
             get => boundsSize;
             set {
-                try {
-                    if (value.X <= 0 || value.Y <= 0)
-                        throw new InvalidEmitterValueException($"{nameof(BoundsSize)} must have values greater than zero.");
-
-                    boundsSize = value;
-                    Bounds = new Vector4(Position.X - (boundsSize.X / 2.0f), Position.Y - (boundsSize.Y / 2.0f), boundsSize.X, boundsSize.Y);
-                } catch (Exception) {
-                    if (ParticleEngine.ErrorHandling == ErrorHandling.Throw)
-                        throw;
-
-                    boundsSize = new Vector2(
-                        Clamp(value.X, 1.0f, float.MaxValue),
-                        Clamp(value.Y, 1.0f, float.MaxValue));
-                    Bounds = new Vector4(
-                        Position.X - (boundsSize.X / 2.0f),
-                        Position.Y - (boundsSize.Y / 2.0f),
-                        boundsSize.X,
-                        boundsSize.Y);
-                }
+                boundsSize = new Vector2(Clamp(value.X, 1.0f, float.MaxValue), Clamp(value.Y, 1.0f, float.MaxValue));
+                Bounds = new Vector4(Position.X - (boundsSize.X / 2.0f), Position.Y - (boundsSize.Y / 2.0f), boundsSize.X, boundsSize.Y);
             }
         }
         private Vector2 boundsSize;
@@ -464,7 +448,7 @@ namespace SE.Particles
         private void EmitParticle(int i, int maxIteration)
         {
             fixed (Particle* particle = &Particles[NumActive + i]) {
-                Shape.Get((float)i / maxIteration, out particle->Position, out particle->Direction, random);
+                Shape.Get((float)i / maxIteration, random, out particle->Position, out particle->Direction);
                 particle->Position += Position;
                 particle->TimeAlive = 0.0f;
                 particle->SourceRectangle = new Int4(0, 0, (int)Config.Texture.Size.X, (int)Config.Texture.Size.Y);

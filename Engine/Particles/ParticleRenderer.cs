@@ -16,7 +16,6 @@ namespace SE.Particles
     public abstract class ParticleRendererBase : IDisposable
     {
         protected internal Emitter Emitter { get; internal set; }
-        protected GraphicsDevice Graphics { get; } = ParticleEngine.GraphicsDevice;
 
         internal void InitializeInternal(Emitter emitter)
         {
@@ -41,6 +40,8 @@ namespace SE.Particles
 #if MONOGAME
     public abstract class MGParticleRenderer : ParticleRendererBase
     {
+        protected GraphicsDevice Graphics { get; } = ParticleEngine.GraphicsDevice;
+
         protected internal abstract void Draw(Matrix cameraMatrix);
 
         public override void Dispose() { }

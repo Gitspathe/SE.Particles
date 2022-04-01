@@ -8,6 +8,8 @@ using SE.Core.Exceptions;
 using Microsoft.Xna.Framework.Graphics;
 #endif
 
+using static SE.Particles.ParticleMath;
+
 namespace SE.Particles
 {
     public class EmitterConfig
@@ -280,19 +282,7 @@ namespace SE.Particles
             {
                 StartingValue = TextureStartingValue.Slice;
                 Texture = texture;
-
-                try {
-                    if (size.X <= 0 || size.Y <= 0)
-                        throw new InvalidEmitterValueException($"{nameof(size)} must have values greater than zero.");
-
-                    Size = size;
-                } catch (Exception) {
-                    if (ParticleEngine.ErrorHandling == ErrorHandling.Throw)
-                        throw;
-
-                    Size = new Vector2(texture.Width, texture.Height);
-                }
-
+                Size = new Vector2(Clamp(size.X, 1.0f, float.MaxValue), Clamp(size.Y, 1.0f, float.MaxValue));
                 FullTextureSize = new Vector2(texture.Width, texture.Height);
                 Parent.Renderer?.OnParticleSizeChanged();
             }

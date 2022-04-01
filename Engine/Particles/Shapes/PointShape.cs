@@ -19,7 +19,7 @@ namespace SE.Particles.Shapes
 
     public class PointEmitterShape : PointShape, IEmitterShape
     {
-        public void Get(float uniformRatio, out Vector2 position, out Vector2 velocity, FRandom random)
+        public void Get(float uniformRatio, FRandom random, out Vector2 position, out Vector2 velocity)
         {
             position = Vector2.Zero;
             random.NextUnitVector(out velocity);

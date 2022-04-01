@@ -65,7 +65,7 @@ namespace SE.Particles.Shapes
             Uniform = uniform;
         }
 
-        public void Get(float uniformRatio, out Vector2 position, out Vector2 velocity, FRandom random)
+        public void Get(float uniformRatio, FRandom random, out Vector2 position, out Vector2 velocity)
         {
             // Return random position and rotation within rectangle if not edge only.
             if (!EdgeOnly) {
